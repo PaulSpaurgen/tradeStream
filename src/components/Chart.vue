@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import PnlSliderChart from './PnlSliderChart.vue'
+import PnlDifferentiatorChart from './PnlDifferentiatorChart.vue'
 
 const trades = ref([])
 
@@ -31,5 +32,9 @@ onMounted(async () => {
 <template>
   <div>
     <PnlSliderChart :trades="trades" />
+  </div>
+  <div>
+    <PnlDifferentiatorChart :trades="trades"/>
+    
   </div>
 </template>
