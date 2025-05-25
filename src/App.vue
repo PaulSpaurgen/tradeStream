@@ -1,13 +1,12 @@
 <script setup>
 import Chart from './components/Chart.vue'
-import axios from 'axios'
-import { onMounted } from 'vue'
 
 
 </script>
 
 <template>
-  <div>
-    <Chart />
+  <div class="bg-primary-800 w-[500px] h-[100px]">
+    <!-- <Chart /> -->
   </div>
+  <div class="bg-red-500 w-[500px] h-[100px]"></div>
 </template>
