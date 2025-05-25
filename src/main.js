@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import HighchartsVue from "highcharts-vue"
+import 'highcharts/modules/annotations'
 import './style.css'
 import App from './App.vue'
 
