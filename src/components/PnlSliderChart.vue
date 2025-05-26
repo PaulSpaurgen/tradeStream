@@ -319,8 +319,7 @@ const handlePnlClick = (isPercentage) => {
 
 <template>
   <div>
-    <div class="">
-      <div class="flex justify-between mb-4">
+    <div class="flex justify-between mb-4">
         <p class="text-gray-100 text-2xl font-semibold">MAE vs PnL chart</p>
         <div :class=[tabGroupClasses.parentTabGroupClass]>
           <button @click="handlePnlClick(true)" :class="[
@@ -342,7 +341,5 @@ const handlePnlClick = (isPercentage) => {
         </div>
       </div>
       <highcharts ref="chartRef" :options="chartOptions" id="high-sky-high"></highcharts>
-
-    </div>
   </div>
 </template>

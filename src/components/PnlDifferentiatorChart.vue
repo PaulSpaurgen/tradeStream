@@ -15,17 +15,37 @@ const props = defineProps({
 
 const chartOptions = ref({
     chart: {
-        type: 'line'
+        type: 'line',
+        backgroundColor: '#262627'
     },
     title: {
-        text: 'P&L Differentiator Chart'
+        text: null,
     },
     xAxis: {
         type: 'linear',
         tickAmount: 10,
+        title: { text: 'MAE Percent' },
+        gridLineWidth: 1,
+        gridLineColor: '#404040',
+        gridLineDashStyle: 'Dash',
+        lineWidth: 0,
+        tickWidth: 0,
+        labels: {
+            style: {
+                color: '#676768'
+            }
+        }
     },
     yAxis: {
-        title: { text: 'P&L' }
+        gridLineWidth: 1,
+        gridLineColor: '#404040',
+        gridLineDashStyle: 'Dash',
+        lineWidth: 0,
+        labels: {
+      style: {
+        color: '#676768'
+      },
+    },
     },
     series: []
 })
@@ -40,11 +60,11 @@ watch(() => props.trades, (newTrades) => {
 }, { immediate: true })
 
 // Watch for changes in maePercentage
-// watch(() => props.maePercentage, () => {
-//   if (props.trades && props.trades.length > 0) {
-//     updateChartConfigData()
-//   }
-// }, { immediate: true })
+watch(() => props.maePercentage, () => {
+  if (typeof props.maePercentage === 'number') {
+    updateChartConfigData()
+  }
+}, { immediate: false })
 
 const updateChartConfigData = () => {
     // Create data pairs for both percentage and USD series
@@ -69,15 +89,13 @@ const updateChartConfigData = () => {
         return [val?.timestamp, val?.pnl_usd]
     })
 
-    console.log({usdDataWithMae, xRange, firstTrade: props.trades[0]})
-
     chartOptions.value = {
         ...chartOptions.value,
         xAxis: {
             ...chartOptions.value.xAxis,
             type: 'datetime',
             min: xRange.min,
-            max: xRange.max 
+            max: xRange.max
         },
         series: [
             {
@@ -95,6 +113,7 @@ const updateChartConfigData = () => {
 
 <template>
     <div>
+        <p class="text-gray-100 text-2xl font-semibold mb-4">Differentiator Chart</p>
         <highcharts :options="chartOptions" id="pnl-differentiator-chart"></highcharts>
     </div>
 </template>

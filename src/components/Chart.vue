@@ -4,9 +4,11 @@ import axios from 'axios'
 import Input from '../atoms/Inputs/Input.vue'
 import PnlSliderChart from './PnlSliderChart.vue'
 import PnlDifferentiatorChart from './PnlDifferentiatorChart.vue'
+import PnlWinRateChart from './PnlWinRateChart.vue'
 import { tabGroupClasses } from './commonCssClasses'
 
 const trades = ref([])
+const totalResponse = ref(null)
 const maePercentage = ref(0)
 const activeTab = ref('slider')
 
@@ -44,8 +46,8 @@ onMounted(async () => {
     if (response && response.data) {
       const safeJson = response.data.replace(/\bNaN\b/g, 'null');
       const parsed = JSON.parse(safeJson);
-      console.log({ parsed })
       trades.value = parsed?.data?.trades || []
+      totalResponse.value = parsed?.data || null
     } else {
       console.error('Invalid response:', response);
     }
@@ -134,24 +136,14 @@ onMounted(async () => {
     <div class="mt-4">
       <div v-show="activeTab === 'slider'">
         <PnlSliderChart :trades="trades" v-model:maePercentage="maePercentage" />
-         <!-- <p>Pnl Slider</p> -->
       </div>
       <div v-show="activeTab === 'differentiator'">
-        <!-- <PnlDifferentiatorChart :trades="trades" /> -->
-        <p>Pnl Differentiator</p>
+        <PnlDifferentiatorChart :trades="trades" v-model:maePercentage="maePercentage" />
       </div>
       <div v-show="activeTab === 'distribution'">
-        <!-- <DistributionChart :trades="trades" /> -->
-        <p>Distribution</p>
+        <PnlWinRateChart :response="totalResponse" v-model:maePercentage="maePercentage" />
+   
     </div>
     </div>
   </div>
-  <!-- -->
-  <!-- <div>
-
-  </div>
-  <div>
-    <PnlDifferentiatorChart :trades="trades"/>
-    
-  </div> -->
 </template>
