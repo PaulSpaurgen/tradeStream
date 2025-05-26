@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { tabGroupClasses } from './commonCssClasses'
 
 const props = defineProps({
@@ -16,6 +16,74 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:maePercentage'])
+const sliderLimits = ref({
+  min: 0,
+  max: 10,
+})
+
+// Generalized function to get current Y-axis extremes for full chart height
+const getFullChartYRange = () => {
+  if (chartRef.value && chartRef.value.chart) {
+    const chart = chartRef.value.chart;
+    const yAxis = chart.yAxis[0];
+    
+    // Get the actual Y-axis extremes (visible range)
+    const yMin = yAxis.min;
+    const yMax = yAxis.max;
+    
+    return { min: yMin, max: yMax };
+  }
+  
+  // Fallback to sliderLimits if chart is not available
+  return { min: sliderLimits.value.min, max: sliderLimits.value.max };
+}
+
+// Robust function to update annotation line to full chart height
+const updateAnnotationToFullHeight = (xValue) => {
+  if (chartRef.value && chartRef.value.chart) {
+    const chart = chartRef.value.chart;
+    const annotation = chart.annotations[0];
+    const yRange = getFullChartYRange();
+    
+    if (annotation) {
+      annotation.update({
+        shapes: [{
+          fill: 'none',
+          stroke: 'rgba(200, 0, 0, 0.75)',
+          dashStyle: '',
+          strokeWidth: 4,
+          type: 'path',
+          points: [{
+            x: parseFloat(xValue),
+            y: yRange.min,
+            xAxis: 0,
+            yAxis: 0
+          }, {
+            x: parseFloat(xValue),
+            y: yRange.max,
+            xAxis: 0,
+            yAxis: 0
+          }]
+        }]
+      });
+    }
+  }
+}
+
+// Helper function to format large numbers
+const formatLargeNumber = (value) => {
+  const absValue = Math.abs(value)
+  
+  if (absValue >= 1000000000) {
+    return (value / 1000000000).toFixed(1) + 'B'
+  } else if (absValue >= 1000000) {
+    return (value / 1000000).toFixed(1) + 'M'
+  } else if (absValue >= 1000) {
+    return (value / 1000).toFixed(1) + 'K'
+  } else {
+    return value.toFixed(2)
+  }
+}
 
 const chartOptions = ref({
   chart: {
@@ -51,9 +119,19 @@ const chartOptions = ref({
         color: '#676768'
       },
       formatter: function () {
-        return isYaxisPercentage.value
-          ? (this.value * 100).toFixed(1) + '%'
-          : '$' + this.value.toFixed(2);
+        if (isYaxisPercentage.value) {
+          return (this.value * 100).toFixed(1) + '%';
+        } else {
+          return '$' + formatLargeNumber(this.value);
+        }
+      }
+    },
+    events: {
+      setExtremes: function(e) {
+        // Update annotation when Y-axis extremes change
+        setTimeout(() => {
+          updateAnnotationToFullHeight(props.maePercentage);
+        }, 50);
       }
     }
   },
@@ -63,6 +141,7 @@ const chartOptions = ref({
 
 
 const isYaxisPercentage = ref(true)
+const isUpdatingFromAnnotation = ref(false)
 
 // Watch for changes in trades prop
 watch(() => props.trades, (newTrades) => {
@@ -73,7 +152,7 @@ watch(() => props.trades, (newTrades) => {
 
 // watch for changes in maePercentage props
 watch(() => props.maePercentage, (newMaePercentage) => {
-  if (newMaePercentage) {
+  if (newMaePercentage && !isUpdatingFromAnnotation.value) {
     handleMaePercentageChange(newMaePercentage);
   }
 }, { immediate: true })
@@ -103,6 +182,17 @@ const updateChartConfigData = () => {
   const yMin = Math.min(...allYValues);
   const yMax = Math.max(...allYValues);
   
+  // Extend Y range for full chart height annotation
+  const yRange = yMax - yMin;
+  const yPadding = yRange * 0.1; // 10% padding
+  const fullYMin = yMin - yPadding;
+  const fullYMax = yMax + yPadding;
+
+  sliderLimits.value = {
+    min: fullYMin,
+    max: fullYMax
+  }
+  
   // Don't mutate prop directly, emit to parent if needed
   // emit('update:maePercentage', xRange.max);
   chartOptions.value = {
@@ -117,24 +207,29 @@ const updateChartConfigData = () => {
       events: {
         afterUpdate: function (e) {
           const newX = Number(this.shapes[0].points[0].x.toFixed(4));
+          isUpdatingFromAnnotation.value = true;
           emit('update:maePercentage', newX);
           console.log('Line moved to x:', newX);
+          // Reset flag after a short delay to allow the prop update to complete
+          setTimeout(() => {
+            isUpdatingFromAnnotation.value = false;
+          }, 0);
         }
       },
       shapes: [{
         fill: 'none',
         stroke: 'rgba(200, 0, 0, 0.75)',
-        dashStyle: 'ShortDot',
-        strokeWidth: 10,
+        dashStyle: '',
+        strokeWidth: 4,
         type: 'path',
         points: [{
           x: props.maePercentage,
-          y: yMin,
+          y: sliderLimits.value.min,
           xAxis: 0,
           yAxis: 0
         }, {
           x: props.maePercentage,
-          y: yMax,
+          y: sliderLimits.value.max,
           xAxis: 0,
           yAxis: 0
         }]
@@ -154,34 +249,11 @@ const updateChartConfigData = () => {
   };
 }
 
+const chartRef = ref(null)
+
 const handleMaePercentageChange = (newMaePercentage) => {
-  // Update the annotation points with the new value
-  if (chartOptions.value.annotations && chartOptions.value.annotations[0]) {
-    const newValue = parseFloat(newMaePercentage);
-    
-    // Get current Y range from the series data
-    const allYValues = [];
-    chartOptions.value.series.forEach(series => {
-      series.data.forEach(point => allYValues.push(point[1]));
-    });
-    const yMin = Math.min(...allYValues);
-    const yMax = Math.max(...allYValues);
-    
-    chartOptions.value.annotations[0].shapes[0].points = [
-      {
-        x: newValue,
-        y: yMin,
-        xAxis: 0,
-        yAxis: 0
-      },
-      {
-        x: newValue,
-        y: yMax,
-        xAxis: 0,
-        yAxis: 0
-      }
-    ];
-  }
+  // Use the generalized function for robust annotation updates
+  updateAnnotationToFullHeight(newMaePercentage);
 }
 
 const handlePnlClick = (isPercentage) => {
@@ -190,8 +262,13 @@ const handlePnlClick = (isPercentage) => {
 
   isYaxisPercentage.value = isPercentage
 
-
   updateChartConfigData()
+  
+  // Use nextTick to ensure chart is updated before refreshing annotation
+  nextTick(() => {
+    // Refresh annotation to full height after chart data changes
+    updateAnnotationToFullHeight(props.maePercentage);
+  });
 }
 </script>
 
@@ -219,7 +296,7 @@ const handlePnlClick = (isPercentage) => {
           </button>
         </div>
       </div>
-      <highcharts :options="chartOptions" id="high-sky-high"></highcharts>
+      <highcharts ref="chartRef" :options="chartOptions" id="high-sky-high"></highcharts>
 
     </div>
   </div>
