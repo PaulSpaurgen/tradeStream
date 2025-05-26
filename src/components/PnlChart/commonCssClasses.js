@@ -6,5 +6,5 @@ export const tabGroupClasses = {
 }
 
 export const buttonClasses = {
-  secondaryButtonClass: "bg-gray-850 text-sm text-gray-50 px-4 py-2 rounded-[2px] hover:bg-[radial-gradient(ellipse_at_center,_#494949,_#323233)] transition-all duration-300"
+  secondaryButtonClass: "bg-gray-850 text-sm text-gray-50 px-4 py-2 rounded-[2px] hover:bg-[radial-gradient(ellipse_at_center,_#494949,_#323233)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
 }

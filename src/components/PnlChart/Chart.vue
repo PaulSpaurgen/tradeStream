@@ -35,7 +35,7 @@ onMounted(async () => {
     const response = await axios.get('https://us-central1-tradestream-cloud.cloudfunctions.net/stoploss-optimizooor', {
       params: {
         uid: 'test_data',
-        session_id: 'session12394'
+        session_id: 'session12394',
       }
     })
 
@@ -158,10 +158,10 @@ const currentValue = computed(() => {
           Distribution
         </button>
       </div>
-      <button @click="openCumulativePnlModal" :class=[buttonClasses.secondaryButtonClass]> Open Cumulative PnL</button>
+      <button @click="openCumulativePnlModal" :class=[buttonClasses.secondaryButtonClass] :disabled="trades.length === 0"> Open Cumulative PnL</button>
     </div>
 
-    <div class="mt-4">
+    <div class="mt-4" v-if="trades.length > 0">
       <div v-if="activeTab === 'slider'">
         <PnlSliderChart :trades="trades" v-model:maePercentage="maePercentage" :isCumulativeView="false" />
       </div>
@@ -170,7 +170,20 @@ const currentValue = computed(() => {
       </div>
       <div v-if="activeTab === 'distribution'">
         <PnlWinRateChart :response="totalResponse" v-model:maePercentage="maePercentage" />
-
+      </div>
+    </div>
+    <div v-else class="mt-4">
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <svg class="w-20 h-20 text-gray-500 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <h3 class="text-2xl font-semibold text-gray-300 mb-3">No Data Found</h3>
+        <p class="text-gray-500 max-w-md mb-4">No trading data is available to display charts. Please check your data source or try again later.</p>
+        <div class="text-sm text-gray-600">
+          <p>• Ensure your API connection is working</p>
+          <p>• Verify that trading data exists for your account</p>
+          <p>• Contact support if the issue persists</p>
+        </div>
       </div>
     </div>
   </div>
