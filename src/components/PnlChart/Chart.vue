@@ -13,6 +13,7 @@ const trades = ref([])
 const totalResponse = ref(null)
 const maePercentage = ref(0)
 const activeTab = ref('slider')
+const isLoading = ref(false)
 
 // Modal state
 const { isOpen: isCumulativePnlModalOpen, open: openCumulativePnlModal, close: closeCumulativePnlModal } = useModal()
@@ -31,6 +32,7 @@ const handleMaePercentageChange = (newValue) => {
 }
 
 onMounted(async () => {
+  isLoading.value = true
   try {
     const response = await axios.get('https://us-central1-tradestream-cloud.cloudfunctions.net/stoploss-optimizooor', {
       params: {
@@ -57,8 +59,10 @@ onMounted(async () => {
     } else {
       console.error('Invalid response:', response);
     }
+    isLoading.value = false
   } catch (error) {
     console.error('Error fetching data:', error)
+    isLoading.value = false
   }
 })
 
@@ -161,7 +165,7 @@ const currentValue = computed(() => {
       <button @click="openCumulativePnlModal" :class=[buttonClasses.secondaryButtonClass] :disabled="trades.length === 0"> Open Cumulative PnL</button>
     </div>
 
-    <div class="mt-4" v-if="trades.length > 0">
+    <div class="mt-4" v-if="trades.length > 0 && !isLoading.value">
       <div v-if="activeTab === 'slider'">
         <PnlSliderChart :trades="trades" v-model:maePercentage="maePercentage" :isCumulativeView="false" />
       </div>
@@ -170,6 +174,14 @@ const currentValue = computed(() => {
       </div>
       <div v-if="activeTab === 'distribution'">
         <PnlWinRateChart :response="totalResponse" v-model:maePercentage="maePercentage" />
+      </div>
+    </div>
+    <div v-else-if="isLoading">
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="w-20 h-20 text-gray-500 mb-6">
+          <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 dark:border-white"></div>
+          <p class="text-gray-500">Loading...</p>
+        </div>
       </div>
     </div>
     <div v-else class="mt-4">
