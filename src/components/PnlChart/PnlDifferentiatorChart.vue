@@ -9,7 +9,7 @@ const props = defineProps({
     },
     maePercentage: {
         type: Number,
-        default: 0.04
+        default: 0
     },
     isCumulativeView: {
         type: Boolean,
@@ -130,7 +130,7 @@ const updateChartConfigData = () => {
                     point[0], // timestamp
                     usdDataWithMae[index] ? usdDataWithMae[index][1] - point[1] : 0 // difference
                 ]),
-                color: 'rgba(255, 193, 7, 0.3)', // Semi-transparent yellow
+                color: '#C08853',
                 fillOpacity: 0.3,
                 lineWidth: 0,
                 marker: {

@@ -84,6 +84,7 @@ const updateChartConfigData = () => {
             {
                 name: 'with mae%',
                 data: chartData,
+                color: '#4B71B7',
             }
         ]
     }

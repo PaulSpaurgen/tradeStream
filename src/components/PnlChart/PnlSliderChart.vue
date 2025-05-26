@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { tabGroupClasses } from './commonCssClasses'
 
 const props = defineProps({
@@ -75,7 +75,27 @@ const updateAnnotationToFullHeight = (xValue) => {
     const yRange = getFullChartYRange();
 
     if (annotation) {
-      annotation.update({
+      // Remove the existing annotation completely
+      chart.removeAnnotation(annotation);
+      
+      // Add a fresh annotation with the new position
+      chart.addAnnotation({
+        draggable: 'x',
+        events: {
+          afterUpdate: function (e) {
+            const newX = Number(this.shapes[0].points[0].x.toFixed(4));
+            
+            // Only emit the final value change (after drag is complete)
+            if (!isUpdatingFromAnnotation.value) {
+              isUpdatingFromAnnotation.value = true;
+              emit('update:maePercentage', newX);
+              
+              setTimeout(() => {
+                isUpdatingFromAnnotation.value = false;
+              }, 0);
+            }
+          }
+        },
         shapes: [{
           ...sliderChartStyle,
           points: [{
@@ -123,7 +143,54 @@ const formatLargeNumber = (value) => {
 const chartOptions = ref({
   chart: {
     type: 'scatter',
-    backgroundColor: '#262627'
+    backgroundColor: '#262627',
+    events: {
+      load: function() {
+        const chart = this;
+        let isDragging = false;
+        
+        // Add mouse events to detect dragging
+        chart.container.addEventListener('mousedown', function(e) {
+          // Check if we're clicking on the annotation
+          const annotation = chart.annotations[0];
+          if (annotation) {
+            isDragging = true;
+          }
+        });
+        
+        chart.container.addEventListener('mousemove', function(e) {
+          if (isDragging) {
+            // Get mouse position relative to chart
+            const rect = chart.container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            
+            // Convert pixel position to chart value
+            const xValue = chart.xAxis[0].toValue(x - chart.plotLeft);
+            
+            // Update label in real-time during drag
+            const annotation = chart.annotations[0];
+            if (annotation && annotation.labels && annotation.labels[0]) {
+              annotation.labels[0].update({
+                text: `MAE: ${xValue.toFixed(2)}%`
+              });
+            }
+          }
+        });
+        
+        chart.container.addEventListener('mouseup', function(e) {
+          isDragging = false;
+        });
+      },
+      redraw: function() {
+        // Fix annotation positioning after chart redraw
+        const chart = this;
+        setTimeout(() => {
+          if (chart.annotations && chart.annotations[0]) {
+            updateAnnotationToFullHeight(props.maePercentage);
+          }
+        }, 50);
+      }
+    }
   },
   title: {
     text: null
@@ -228,20 +295,23 @@ const updateChartConfigData = () => {
       events: {
         afterUpdate: function (e) {
           const newX = Number(this.shapes[0].points[0].x.toFixed(4));
-          isUpdatingFromAnnotation.value = true;
-          emit('update:maePercentage', newX);
-
-          // Update the label text to reflect the new position
-          if (this.labels && this.labels[0]) {
-            this.labels[0].update({
-              text: `MAE: ${newX.toFixed(2)}%`
-            });
+          
+          // Only emit the final value change (after drag is complete)
+          if (!isUpdatingFromAnnotation.value) {
+            isUpdatingFromAnnotation.value = true;
+            emit('update:maePercentage', newX);
+            
+            // Update label with final value
+            if (this.labels && this.labels[0]) {
+              this.labels[0].update({
+                text: `MAE: ${newX.toFixed(2)}%`
+              });
+            }
+            
+            setTimeout(() => {
+              isUpdatingFromAnnotation.value = false;
+            }, 0);
           }
-
-          // Reset flag after a short delay to allow the prop update to complete
-          setTimeout(() => {
-            isUpdatingFromAnnotation.value = false;
-          }, 0);
         }
       },
       shapes: [{
@@ -297,7 +367,60 @@ watch(() => props.maePercentage, (newMaePercentage) => {
   }
 }, { immediate: false })
 
+// Watch for visibility changes (tab switches, modal open/close)
+watch(() => props.isCumulativeView, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    // Chart visibility changed, need to resize and reposition
+    nextTick(() => {
+      if (chartRef.value && chartRef.value.chart) {
+        const chart = chartRef.value.chart;
+        // Force chart to recalculate dimensions
+        chart.reflow();
+        // Reposition annotation after reflow
+        setTimeout(() => {
+          updateAnnotationToFullHeight(props.maePercentage);
+        }, 100);
+      }
+    });
+  }
+}, { immediate: false })
+
 const chartRef = ref(null)
+let resizeObserver = null
+
+// Setup ResizeObserver to detect visibility changes
+onMounted(() => {
+  if (chartRef.value) {
+    resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          // Chart is visible, reflow and reposition
+          nextTick(() => {
+            if (chartRef.value && chartRef.value.chart) {
+              const chart = chartRef.value.chart;
+              chart.reflow();
+              setTimeout(() => {
+                updateAnnotationToFullHeight(props.maePercentage);
+              }, 100);
+            }
+          });
+        }
+      }
+    });
+    
+    // Observe the chart container
+    const chartContainer = chartRef.value.$el || chartRef.value;
+    if (chartContainer) {
+      resizeObserver.observe(chartContainer);
+    }
+  }
+})
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
+})
 
 const handleMaePercentageChange = (newMaePercentage) => {
   // Use the generalized function for robust annotation updates
