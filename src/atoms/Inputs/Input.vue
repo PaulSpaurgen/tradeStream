@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 const props = defineProps({
   type: {
@@ -10,22 +10,61 @@ const props = defineProps({
     type: String,
     default: ''
   },
-  value: {
+  modelValue: {
     type: [String, Number],
     default: ''
   },
-  onChange: {
-    type: Function,
-    required: true
+  inputClass: {
+    type: String,
+    default: ''
   }
 })
+
+const emit = defineEmits(['update:modelValue'])
 
 const isActive = ref(false)
 const isFocused = ref(false)
 const isHovered = ref(false)
 
-watch(() => props.value, (newValue) => {
-  isActive.value = !!newValue?.length
+const labelClasses = computed(() => {
+  if (isFocused.value) {
+    return 'absolute left-[8px] transition-all duration-200 ease-in-out pointer-events-none text-primary-500 -top-[12px] text-[12px]'
+  }
+  
+  if (isActive.value) {
+    return 'absolute left-[8px] transition-all duration-200 ease-in-out pointer-events-none text-primary-500 -top-[12px] text-[12px]'
+  }
+  
+  if (isHovered.value) {
+    return 'absolute left-[8px] transition-all duration-200 ease-in-out pointer-events-none text-gray-200 top-1/2 -translate-y-1/2 text-[14px]'
+  }
+  
+  return 'absolute left-[8px] transition-all duration-200 ease-in-out pointer-events-none text-gray-400 top-1/2 -translate-y-1/2 text-[14px]'
+})
+
+const inputClasses = computed(() => {
+  let baseClasses = ''
+  
+  if (isFocused.value) {
+    baseClasses = 'w-full bg-transparent border-b-2 px-[8px] py-[8px] text-white-800 outline-none transition-all duration-200 cursor-pointer border-primary-500'
+  } else if (isActive.value) {
+    baseClasses = 'w-full bg-transparent border-b-2 px-[8px] py-[8px] text-white-800 outline-none transition-all duration-200 cursor-pointer border-primary-500'
+  } else if (isHovered.value) {
+    baseClasses = 'w-full bg-transparent border-b-2 px-[8px] py-[8px] text-white-800 outline-none transition-all duration-200 cursor-pointer border-gray-300'
+  } else {
+    baseClasses = 'w-full bg-transparent border-b-2 px-[8px] py-[8px] text-white-800 outline-none transition-all duration-200 cursor-pointer border-gray-800'
+  }
+  
+  // Append custom inputClass at the end
+  return props.inputClass ? `${baseClasses} ${props.inputClass}` : baseClasses
+})
+
+watch(() => props.modelValue, (newValue) => { 
+  if (typeof newValue === 'number') {
+    isActive.value = newValue !== null && newValue !== undefined
+  } else {
+    isActive.value = !!newValue?.length
+  }
 }, { immediate: true })
 
 const handleFocus = () => {
@@ -35,9 +74,15 @@ const handleFocus = () => {
 
 const handleBlur = () => {
   isFocused.value = false
-  if (!props.value?.length) {
-    isActive.value = false
+  if (typeof props.modelValue === 'number') {
+    isActive.value = props.modelValue !== null && props.modelValue !== undefined
+  } else {
+    isActive.value = !!props.modelValue?.length
   }
+}
+
+const handleInput = (e) => {
+  emit('update:modelValue', e.target.value)
 }
 
 const handleMouseEnter = () => {
@@ -47,42 +92,27 @@ const handleMouseEnter = () => {
 const handleMouseLeave = () => {
   isHovered.value = false
 }
-
-const { type, label, value, onChange, ...rest } = props
 </script>
 
 <template>
   <div 
-    class="relative "
+    class="relative"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
     <label 
       v-if="label" 
-      :class="`
-        absolute left-[8px] transition-all duration-200 ease-in-out
-        text-[16px] pointer-events-none
-        ${isActive ? '-top-6 text-primary-500' : 'top-2'}
-        ${isFocused ? 'text-primary-500' : 'text-gray-400'}
-        ${isHovered && !isFocused ? 'text-gray-200' : ''}
-      `"
+      :class="labelClasses"
     >
       {{ label }}
     </label>
     <input
       :type="type"
-      :value="value"
-      @input="(e) => onChange(e.target.value)"
+      :value="modelValue"
+      @input="handleInput"
       @focus="handleFocus"
       @blur="handleBlur"
-      v-bind="rest"
-      :class="`
-        w-full bg-transparent border-b-2 px-[8px] py-[8px] 
-        text-white-800 outline-none transition-all duration-200 cursor-pointer
-        ${isFocused ? 'border-primary-500' : 'border-gray-800'}
-        ${isHovered && !isFocused ? 'border-gray-300' : ''}
-        ${isActive && !isFocused ? 'border-primary-500' : ''}
-      `"
+      :class="inputClasses"
     />
   </div>
 </template>

@@ -35,7 +35,7 @@ const chartOptions = ref({
 // Watch for changes in trades prop
 watch(() => props.trades, (newTrades) => {
     if (newTrades && newTrades.length > 0) {
-        updateChartConfigData(newTrades)
+        updateChartConfigData()
     }
 }, { immediate: true })
 

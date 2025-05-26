@@ -1,131 +1,182 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { tabGroupClasses } from './commonCssClasses'
 
 const props = defineProps({
   trades: {
     type: Array,
     required: true,
     default: () => []
+  },
+  maePercentage: {
+    type: Number,
+    required: true,
+    default: 0
   }
 })
 
+const emit = defineEmits(['update:maePercentage'])
+
 const chartOptions = ref({
   chart: {
-    type: 'scatter'
+    type: 'scatter',
+    backgroundColor: '#262627'
   },
   title: {
-    text: 'Sample Chart'
+    text: null
   },
+
   xAxis: {
     type: 'linear',
     tickAmount: 10,
     title: { text: 'MAE Percent' },
+    gridLineWidth: 1,
+    gridLineColor: '#404040',
+    gridLineDashStyle: 'Dash',
+    lineWidth: 0,
+    tickWidth: 0,
+    labels: {
+      style: {
+        color: '#676768'
+      }
+    }
+  },
+  yAxis: {
+    gridLineWidth: 1,
+    gridLineColor: '#404040',
+    gridLineDashStyle: 'Dash',
+    lineWidth: 0,
+    labels: {
+      style: {
+        color: '#676768'
+      },
+      formatter: function () {
+        return isYaxisPercentage.value
+          ? (this.value * 100).toFixed(1) + '%'
+          : '$' + this.value.toFixed(2);
+      }
+    }
   },
   annotations: [],
   series: []
 })
 
-// Add ref for current value
-const currentValue = ref(0)
+
 const isYaxisPercentage = ref(true)
-const chartGraphData = ref({
-  xAxisValues: [],
-  yAxisValues: [],
-  pnl_percent: [],
-  pnl_usd:[],
-  minXval: Infinity,
-  maxXval: -Infinity
-})
 
 // Watch for changes in trades prop
 watch(() => props.trades, (newTrades) => {
   if (newTrades && newTrades.length > 0) {
-    chartGraphData.value = newTrades.reduce((acc, val) => {
-      // Push values to arrays
-      acc.xAxisValues.push(val?.mae_percent);
-      acc.yAxisValues.push(val?.pnl_percent);
-      acc.pnl_percent.push(val?.pnl_percent);
-      acc.pnl_usd.push(val?.pnl_usd);
-
-      // Update min/max values
-      acc.minXval = Math.min(acc.minXval, val?.mae_percent);
-      acc.maxXval = Math.max(acc.maxXval, val?.mae_percent);
-      return acc;
-    }, {
-      xAxisValues: [],
-      yAxisValues: [],
-      pnl_percent: [],
-      pnl_usd:[],
-      minXval: Infinity,
-      maxXval: -Infinity
-    });
     updateChartConfigData();
   }
 }, { immediate: true })
 
-//  this function calculates the values for updating the chatOptions
-const updateChartConfigData = () =>{
-      // Create data pairs for the chart
-      const dataPairs = chartGraphData.value.xAxisValues.map((x, i) => [x, chartGraphData.value.yAxisValues[i]]);
+// watch for changes in maePercentage props
+watch(() => props.maePercentage, (newMaePercentage) => {
+  if (newMaePercentage) {
+    handleMaePercentageChange(newMaePercentage);
+  }
+}, { immediate: true })
 
-      // Set initial value of slider
-      currentValue.value = chartGraphData.value.maxXval;
-      chartOptions.value = {
-        ...chartOptions.value,
-        xAxis: {
-          ...chartOptions.value.xAxis,
-          min: chartGraphData.value.minXval,
-          max: chartGraphData.value.maxXval,
-        },
-        annotations: [{
-          draggable: 'x',
-          events: {
-            afterUpdate: function (e) {
-              const newX = this.shapes[0].points[0].x;
-              currentValue.value = newX;
-              console.log('Line moved to x:', newX);
-            }
-          },
-          shapes: [{
-            fill: 'none',
-            stroke: 'rgba(200, 0, 0, 0.75)',
-            dashStyle: 'ShortDot',
-            strokeWidth: 10,
-            type: 'path',
-            points: [{
-              x: currentValue.value,
-              y: Math.min(...chartGraphData.value.yAxisValues),
-              xAxis: 0,
-              yAxis: 0
-            }, {
-              x: currentValue.value,
-              y: Math.max(...chartGraphData.value.yAxisValues),
-              xAxis: 0,
-              yAxis: 0
-            }]
-          }]
-        }],
-        series: [{
-          name: "Some thing",
-          data: dataPairs
+//  this function calculates the values for updating the chatOptions
+const updateChartConfigData = () => {
+  const xRange = {
+    min: Number.MAX_SAFE_INTEGER,
+    max: Number.MIN_SAFE_INTEGER
+  }
+  const trades = props.trades
+  // Create data pairs for the chart
+
+  const dataPairs = trades.map((value, i) => {
+    if (value?.mae_percent && value?.pnl_percent) {
+      xRange.min = Math.min(xRange.min, value.mae_percent);
+      xRange.max = Math.max(xRange.max, value.mae_percent);
+    }
+    return isYaxisPercentage.value ? [value.mae_percent, value.pnl_percent] : [value.mae_percent, value.pnl_usd]
+  });
+
+  const losingTrades = dataPairs.filter(trade => trade[1] < 0)
+  const winningTrades = dataPairs.filter(trade => trade[1] > 0)
+
+  // Get Y range from current data
+  const allYValues = dataPairs.map(point => point[1]);
+  const yMin = Math.min(...allYValues);
+  const yMax = Math.max(...allYValues);
+  
+  // Don't mutate prop directly, emit to parent if needed
+  // emit('update:maePercentage', xRange.max);
+  chartOptions.value = {
+    ...chartOptions.value,
+    xAxis: {
+      ...chartOptions.value.xAxis,
+      min: xRange.min,
+      max: xRange.max,
+    },
+    annotations: [{
+      draggable: 'x',
+      events: {
+        afterUpdate: function (e) {
+          const newX = Number(this.shapes[0].points[0].x.toFixed(4));
+          emit('update:maePercentage', newX);
+          console.log('Line moved to x:', newX);
+        }
+      },
+      shapes: [{
+        fill: 'none',
+        stroke: 'rgba(200, 0, 0, 0.75)',
+        dashStyle: 'ShortDot',
+        strokeWidth: 10,
+        type: 'path',
+        points: [{
+          x: props.maePercentage,
+          y: yMin,
+          xAxis: 0,
+          yAxis: 0
+        }, {
+          x: props.maePercentage,
+          y: yMax,
+          xAxis: 0,
+          yAxis: 0
         }]
-      };
+      }]
+    }],
+    series: [{
+      name: 'Winning Trades',
+      data: winningTrades,
+      color: '#22c55e',
+      showInLegend: false
+    }, {
+      name: 'Losing Trades',
+      data: losingTrades,
+      color: '#ef4444',
+      showInLegend: false
+    }]
+  };
 }
 
-const handleInputChange = (e) => {
+const handleMaePercentageChange = (newMaePercentage) => {
   // Update the annotation points with the new value
   if (chartOptions.value.annotations && chartOptions.value.annotations[0]) {
-    const newValue = parseFloat(e.target.value);
+    const newValue = parseFloat(newMaePercentage);
+    
+    // Get current Y range from the series data
+    const allYValues = [];
+    chartOptions.value.series.forEach(series => {
+      series.data.forEach(point => allYValues.push(point[1]));
+    });
+    const yMin = Math.min(...allYValues);
+    const yMax = Math.max(...allYValues);
+    
     chartOptions.value.annotations[0].shapes[0].points = [
       {
         x: newValue,
-        y: Math.min(...chartGraphData.value.yAxisValues),
+        y: yMin,
         xAxis: 0,
         yAxis: 0
       },
       {
         x: newValue,
-        y: Math.max(...chartGraphData.value.yAxisValues),
+        y: yMax,
         xAxis: 0,
         yAxis: 0
       }
@@ -133,27 +184,43 @@ const handleInputChange = (e) => {
   }
 }
 
-const handlePnlClick = (isPercentage) =>{
-    if(isYaxisPercentage.value === isPercentage) return
-    isYaxisPercentage.value = !isYaxisPercentage.value
-    if(isYaxisPercentage.value){
-      chartGraphData.value.yAxisValues = chartGraphData.value.pnl_percent
-    }else{
-      chartGraphData.value.yAxisValues = chartGraphData.value.pnl_usd
-    }
-    updateChartConfigData()
+const handlePnlClick = (isPercentage) => {
+  // Only update if the state is actually changing
+  if (isYaxisPercentage.value === isPercentage) return
+
+  isYaxisPercentage.value = isPercentage
+
+
+  updateChartConfigData()
 }
 </script>
 
 <template>
   <div>
-    <input type="number" v-model="currentValue" @input="handleInputChange" class="mt-2 p-2 border rounded" />
-    <div class="relative">
-      <highcharts :options="chartOptions" id="high-sky-high"></highcharts>
-      <div class="flex gap-4 absolute top-0 right-0 z-10">
-        <button @click="handlePnlClick(true)">pnl%</button>
-        <button @click="handlePnlClick(false)">pnl$</button>
+    <div class="">
+      <div class="flex justify-between mb-4">
+        <p class="text-gray-100 text-2xl font-semibold">MAE vs PnL chart</p>
+        <div :class=[tabGroupClasses.parentTabGroupClass]>
+          <button @click="handlePnlClick(true)" :class="[
+            tabGroupClasses.commonTabClass,
+            isYaxisPercentage
+              ? tabGroupClasses.selectedTabClass
+              : tabGroupClasses.unselectedTabClass
+          ]">
+            PnL %
+          </button>
+          <button @click="handlePnlClick(false)" :class="[
+            tabGroupClasses.commonTabClass,
+            !isYaxisPercentage
+              ? tabGroupClasses.selectedTabClass
+              : tabGroupClasses.unselectedTabClass
+          ]">
+            PnL $
+          </button>
+        </div>
       </div>
+      <highcharts :options="chartOptions" id="high-sky-high"></highcharts>
+
     </div>
   </div>
-</template> 
+</template>

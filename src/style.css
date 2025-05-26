@@ -5,9 +5,10 @@
 @tailwind utilities;
 
 :root {
-  font-family: 'Poppins', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Manrope', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  background-color: #1C1C1D;
 }
 
 
