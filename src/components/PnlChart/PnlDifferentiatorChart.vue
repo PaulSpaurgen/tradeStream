@@ -25,10 +25,29 @@ const chartOptions = ref({
     title: {
         text: null,
     },
+    legend: {
+        enabled: true,
+        align: 'center',
+        verticalAlign: 'bottom',
+        itemStyle: {
+            color: '#676768',
+            fontSize: '12px'
+        },
+        itemHoverStyle: {
+            color: '#ffffff'
+        }
+    },
+    tooltip: {
+        shared: true,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        borderColor: '#676768',
+        style: {
+            color: '#ffffff'
+        }
+    },
     xAxis: {
         type: 'linear',
         tickAmount: 10,
-        title: { text: 'MAE Percent' },
         gridLineWidth: 1,
         gridLineColor: '#404040',
         gridLineDashStyle: 'Dash',
@@ -91,12 +110,38 @@ const updateChartConfigData = () => {
         },
         series: [
             {
-                name: 'P&L $',
+                name: 'Original P&L',
                 data: usdDataWithoutMae,
+                color: '#B4465A',
+                lineWidth: 2,
+                dashStyle: 'Solid'
             },
             {
-                name: 'with mae%',
+                name: 'MAE Projected P&L',
                 data: usdDataWithMae,
+                color: '#54A184',
+                lineWidth: 3,
+                dashStyle: 'Dash'
+            },
+            {
+                name: 'Difference Area',
+                type: 'areaspline',
+                data: usdDataWithoutMae.map((point, index) => [
+                    point[0], // timestamp
+                    usdDataWithMae[index] ? usdDataWithMae[index][1] - point[1] : 0 // difference
+                ]),
+                color: 'rgba(255, 193, 7, 0.3)', // Semi-transparent yellow
+                fillOpacity: 0.3,
+                lineWidth: 0,
+                marker: {
+                    enabled: false
+                },
+                enableMouseTracking: true,
+                tooltip: {
+                    pointFormatter: function() {
+                        return `<span style="color:${this.color}">●</span> ${this.series.name}: <b>${this.y > 0 ? '+' : ''}${this.y.toFixed(2)}</b><br/>`
+                    }
+                }
             }
         ]
     }

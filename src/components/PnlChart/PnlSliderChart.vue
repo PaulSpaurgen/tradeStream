@@ -21,17 +21,17 @@ const props = defineProps({
 
 const sliderChartStyle = {
   fill: 'none',
-  stroke: 'rgba(200, 0, 0, 0.75)',
+  stroke: '#B4465A',
   dashStyle: '',
   strokeWidth: 4,
   type: 'path',
 }
 
 const labelStyle = {
-  backgroundColor: 'rgba(0, 0, 0, 0.8)',
-  borderColor: 'rgba(200, 0, 0, 0.75)',
+  backgroundColor: '#B4465A',
+  // borderColor: 'rgba(200, 0, 0, 0.75)',
   borderWidth: 1,
-  borderRadius: 3,
+  borderRadius: 2,
   style: {
     color: '#ffffff',
     fontSize: '12px',
