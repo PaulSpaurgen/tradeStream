@@ -109,7 +109,7 @@ onUnmounted(() => {
     <Transition name="modal">
       <div
         v-if="isVisible"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden"
         @click="handleOverlayClick"
       >
         <!-- Overlay -->
@@ -119,7 +119,7 @@ onUnmounted(() => {
         <div
           ref="modalRef"
           :class="[
-            'relative bg-gray-900 rounded-lg shadow-xl border border-gray-850 w-full z-10 my-8',
+            'relative bg-gray-800 rounded-[6px] shadow-xl border border-gray-850 w-full z-10 my-8',
             sizeClasses[size],
             maxWidth ? `max-w-[${maxWidth}]` : ''
           ]"
@@ -129,7 +129,7 @@ onUnmounted(() => {
           :aria-labelledby="title ? 'modal-title' : undefined"
         >
           <!-- Header -->
-          <div v-if="title || showCloseButton" class="flex items-center justify-between p-6 border-b border-gray-850">
+          <div v-if="title || showCloseButton" class="flex items-center justify-between p-6 border-b border-gray-850 bg-gray-950 ">
             <h3 v-if="title" id="modal-title" class="text-xl font-semibold text-gray-100">
               {{ title }}
             </h3>

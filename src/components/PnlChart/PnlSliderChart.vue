@@ -12,6 +12,10 @@ const props = defineProps({
     type: Number,
     required: true,
     default: 0
+  },
+  isCumulativeView: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -174,20 +178,6 @@ const chartOptions = ref({
 const isYaxisPercentage = ref(true)
 const isUpdatingFromAnnotation = ref(false)
 
-// Watch for changes in trades prop
-watch(() => props.trades, (newTrades) => {
-  if (newTrades && newTrades.length > 0) {
-    updateChartConfigData();
-  }
-}, { immediate: true })
-
-// watch for changes in maePercentage props
-watch(() => props.maePercentage, (newMaePercentage) => {
-  if (typeof newMaePercentage === 'number' && !isUpdatingFromAnnotation.value) {
-    handleMaePercentageChange(newMaePercentage);
-  }
-}, { immediate: false })
-
 //  this function calculates the values for updating the chatOptions
 const updateChartConfigData = () => {
   const xRange = {
@@ -293,6 +283,20 @@ const updateChartConfigData = () => {
   };
 }
 
+// Watch for changes in trades prop
+watch(() => props.trades, (newTrades) => {
+  if (newTrades && newTrades.length > 0) {
+    updateChartConfigData();
+  }
+}, { immediate: true })
+
+// watch for changes in maePercentage props
+watch(() => props.maePercentage, (newMaePercentage) => {
+  if (typeof newMaePercentage === 'number' && !isUpdatingFromAnnotation.value) {
+    handleMaePercentageChange(newMaePercentage);
+  }
+}, { immediate: false })
+
 const chartRef = ref(null)
 
 const handleMaePercentageChange = (newMaePercentage) => {
@@ -339,6 +343,7 @@ const handlePnlClick = (isPercentage) => {
           </button>
         </div>
       </div>
-      <highcharts ref="chartRef" :options="chartOptions" id="high-sky-high"></highcharts>
+      
+      <highcharts ref="chartRef" :options="chartOptions" id="high-sky-high" :style="isCumulativeView ? 'height: 25vh; width: 100%;' : ''"></highcharts>
   </div>
 </template>

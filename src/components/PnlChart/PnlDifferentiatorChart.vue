@@ -10,6 +10,10 @@ const props = defineProps({
     maePercentage: {
         type: Number,
         default: 0.04
+    },
+    isCumulativeView: {
+        type: Boolean,
+        default: false
     }
 })
 
@@ -52,19 +56,7 @@ const chartOptions = ref({
 
 
 
-// Watch for changes in trades prop
-watch(() => props.trades, (newTrades) => {
-    if (newTrades && newTrades.length > 0) {
-        updateChartConfigData()
-    }
-}, { immediate: true })
 
-// Watch for changes in maePercentage
-watch(() => props.maePercentage, () => {
-  if (typeof props.maePercentage === 'number') {
-    updateChartConfigData()
-  }
-}, { immediate: false })
 
 const updateChartConfigData = () => {
     // Create data pairs for both percentage and USD series
@@ -109,11 +101,24 @@ const updateChartConfigData = () => {
         ]
     }
 }
+// Watch for changes in trades prop
+watch(() => props.trades, (newTrades) => {
+    if (newTrades && newTrades.length > 0) {
+        updateChartConfigData()
+    }
+}, { immediate: true })
+
+// Watch for changes in maePercentage
+watch(() => props.maePercentage, () => {
+  if (typeof props.maePercentage === 'number') {
+    updateChartConfigData()
+  }
+}, { immediate: false })
 </script>
 
 <template>
     <div>
         <p class="text-gray-100 text-2xl font-semibold mb-4">Differentiator Chart</p>
-        <highcharts :options="chartOptions" id="pnl-differentiator-chart"></highcharts>
+        <highcharts :options="chartOptions" id="pnl-differentiator-chart" :style="isCumulativeView ? 'height: 25vh; width: 100%;' : ''"></highcharts>
     </div>
 </template>

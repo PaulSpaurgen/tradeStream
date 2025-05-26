@@ -11,6 +11,10 @@ const props = defineProps({
     maePercentage: {
         type: Number,
         default: 0.04
+    },
+    isCumulativeView: {
+        type: Boolean,
+        default: false
     }
 })
 
@@ -53,20 +57,6 @@ const chartOptions = ref({
     series: []
 })
 
-// Watch for changes in trades prop
-watch(() => props.response, (newResponse) => {
-    if (newResponse) {
-        updateChartConfigData()
-    }
-}, { immediate: true })
-
-// Watch for changes in maePercentage
-watch(() => props.maePercentage, () => {
-    if (typeof props.maePercentage === 'number') {
-        updateChartConfigData()
-    }
-}, { immediate: false })
-
 const updateChartConfigData = () => {
     // Create data pairs for both percentage and USD series
     const xRange = {
@@ -99,6 +89,20 @@ const updateChartConfigData = () => {
     }
 }
 
+// Watch for changes in trades prop
+watch(() => props.response, (newResponse) => {
+    if (newResponse) {
+        updateChartConfigData()
+    }
+}, { immediate: true })
+
+// Watch for changes in maePercentage
+watch(() => props.maePercentage, () => {
+    if (typeof props.maePercentage === 'number') {
+        updateChartConfigData()
+    }
+}, { immediate: false })
+
 const handlePnlClick = (value) => {
     isValueByExpectedValue.value = value
     updateChartConfigData()
@@ -128,6 +132,6 @@ const handlePnlClick = (value) => {
           </button>
         </div>
       </div>
-        <highcharts :options="chartOptions" id="pnl-winrate-chart"></highcharts>
+        <highcharts :options="chartOptions" id="pnl-winrate-chart" :style="isCumulativeView ? 'height: 25vh; width: 100%;' : ''"></highcharts>
     </div>
 </template>
