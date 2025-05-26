@@ -15,6 +15,31 @@ const props = defineProps({
   }
 })
 
+const sliderChartStyle = {
+  fill: 'none',
+  stroke: 'rgba(200, 0, 0, 0.75)',
+  dashStyle: '',
+  strokeWidth: 4,
+  type: 'path',
+}
+
+const labelStyle = {
+  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  borderColor: 'rgba(200, 0, 0, 0.75)',
+  borderWidth: 1,
+  borderRadius: 3,
+  style: {
+    color: '#ffffff',
+    fontSize: '12px',
+    fontWeight: 'bold'
+  },
+  y: -5,
+  align: 'center',
+  verticalAlign: 'bottom',
+  distance: 0,
+  shape: 'rect'
+}
+
 const emit = defineEmits(['update:maePercentage'])
 const sliderLimits = ref({
   min: 0,
@@ -26,14 +51,14 @@ const getFullChartYRange = () => {
   if (chartRef.value && chartRef.value.chart) {
     const chart = chartRef.value.chart;
     const yAxis = chart.yAxis[0];
-    
+
     // Get the actual Y-axis extremes (visible range)
     const yMin = yAxis.min;
     const yMax = yAxis.max;
-    
+
     return { min: yMin, max: yMax };
   }
-  
+
   // Fallback to sliderLimits if chart is not available
   return { min: sliderLimits.value.min, max: sliderLimits.value.max };
 }
@@ -44,15 +69,11 @@ const updateAnnotationToFullHeight = (xValue) => {
     const chart = chartRef.value.chart;
     const annotation = chart.annotations[0];
     const yRange = getFullChartYRange();
-    
+
     if (annotation) {
       annotation.update({
         shapes: [{
-          fill: 'none',
-          stroke: 'rgba(200, 0, 0, 0.75)',
-          dashStyle: '',
-          strokeWidth: 4,
-          type: 'path',
+          ...sliderChartStyle,
           points: [{
             x: parseFloat(xValue),
             y: yRange.min,
@@ -64,6 +85,16 @@ const updateAnnotationToFullHeight = (xValue) => {
             xAxis: 0,
             yAxis: 0
           }]
+        }],
+        labels: [{
+          point: {
+            x: parseFloat(xValue),
+            y: yRange.min + (yRange.max - yRange.min) * 0.9,
+            xAxis: 0,
+            yAxis: 0
+          },
+          text: `MAE: ${parseFloat(xValue).toFixed(2)}%`,
+          ...labelStyle
         }]
       });
     }
@@ -73,7 +104,7 @@ const updateAnnotationToFullHeight = (xValue) => {
 // Helper function to format large numbers
 const formatLargeNumber = (value) => {
   const absValue = Math.abs(value)
-  
+
   if (absValue >= 1000000000) {
     return (value / 1000000000).toFixed(1) + 'B'
   } else if (absValue >= 1000000) {
@@ -127,7 +158,7 @@ const chartOptions = ref({
       }
     },
     events: {
-      setExtremes: function(e) {
+      setExtremes: function (e) {
         // Update annotation when Y-axis extremes change
         setTimeout(() => {
           updateAnnotationToFullHeight(props.maePercentage);
@@ -181,7 +212,7 @@ const updateChartConfigData = () => {
   const allYValues = dataPairs.map(point => point[1]);
   const yMin = Math.min(...allYValues);
   const yMax = Math.max(...allYValues);
-  
+
   // Extend Y range for full chart height annotation
   const yRange = yMax - yMin;
   const yPadding = yRange * 0.1; // 10% padding
@@ -192,7 +223,7 @@ const updateChartConfigData = () => {
     min: fullYMin,
     max: fullYMax
   }
-  
+
   // Don't mutate prop directly, emit to parent if needed
   // emit('update:maePercentage', xRange.max);
   chartOptions.value = {
@@ -210,6 +241,14 @@ const updateChartConfigData = () => {
           isUpdatingFromAnnotation.value = true;
           emit('update:maePercentage', newX);
           console.log('Line moved to x:', newX);
+
+          // Update the label text to reflect the new position
+          if (this.labels && this.labels[0]) {
+            this.labels[0].update({
+              text: `MAE: ${newX.toFixed(2)}%`
+            });
+          }
+
           // Reset flag after a short delay to allow the prop update to complete
           setTimeout(() => {
             isUpdatingFromAnnotation.value = false;
@@ -217,11 +256,7 @@ const updateChartConfigData = () => {
         }
       },
       shapes: [{
-        fill: 'none',
-        stroke: 'rgba(200, 0, 0, 0.75)',
-        dashStyle: '',
-        strokeWidth: 4,
-        type: 'path',
+        ...sliderChartStyle,
         points: [{
           x: props.maePercentage,
           y: sliderLimits.value.min,
@@ -233,6 +268,16 @@ const updateChartConfigData = () => {
           xAxis: 0,
           yAxis: 0
         }]
+      }],
+      labels: [{
+        point: {
+          x: props.maePercentage,
+          y: sliderLimits.value.min + (sliderLimits.value.max - sliderLimits.value.min) * 0.9,
+          xAxis: 0,
+          yAxis: 0
+        },
+        text: `MAE: ${props.maePercentage.toFixed(2)}%`,
+        ...labelStyle
       }]
     }],
     series: [{
@@ -263,7 +308,7 @@ const handlePnlClick = (isPercentage) => {
   isYaxisPercentage.value = isPercentage
 
   updateChartConfigData()
-  
+
   // Use nextTick to ensure chart is updated before refreshing annotation
   nextTick(() => {
     // Refresh annotation to full height after chart data changes

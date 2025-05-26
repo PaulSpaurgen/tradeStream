@@ -78,7 +78,7 @@ onMounted(async () => {
     <div :class=[commonBoxClass]>
       <!--  -->
       <div class="text-gray-100 text-md font-semibold mb-4">Current Value</div>
-
+        
       <p class="text-3xl font-semibold">+ $800</p>
       <p class="text-gray-500 text-xs mt-4">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
 
@@ -143,12 +143,12 @@ onMounted(async () => {
       <div v-show="activeTab === 'distribution'">
         <!-- <DistributionChart :trades="trades" /> -->
         <p>Distribution</p>
-      </div>
+    </div>
     </div>
   </div>
   <!-- -->
   <!-- <div>
-   
+
   </div>
   <div>
     <PnlDifferentiatorChart :trades="trades"/>
