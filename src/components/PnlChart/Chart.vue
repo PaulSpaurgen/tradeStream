@@ -49,7 +49,11 @@ onMounted(async () => {
         }
       })
       totalResponse.value = parsed?.data || null
-      console.log({ totalResponse: totalResponse.value })
+      const index = totalResponse.value.ev_by_mae.findIndex(m =>
+        Math.abs(m - parsed?.data?.optimal_stop?.improved_ev) < 0.0001
+      );
+      maePercentage.value = totalResponse.value.mae_levels[index] * 100
+
     } else {
       console.error('Invalid response:', response);
     }
@@ -102,7 +106,6 @@ const currentValue = computed(() => {
 
       <Input label="maePercentage%" type="number" inputClass="w-[150px] text-3xl font-semibold"
         :modelValue="maePercentage" @update:modelValue="handleMaePercentageChange" />
-      <!-- <p class="text-gray-500 text-xs mt-4">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p> -->
 
     </div>
 
@@ -111,7 +114,7 @@ const currentValue = computed(() => {
       <div class="text-gray-100 text-md font-semibold mb-4">Current Value</div>
 
       <p class="text-3xl font-semibold" v-html="retrunColorCodedValue(currentValue)"></p>
-      <p class="text-gray-500 text-xs mt-4">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+      <p class="text-gray-500 text-xs mt-4">Change the stoploss distance to see the current value</p>
 
     </div>
 
@@ -121,7 +124,7 @@ const currentValue = computed(() => {
       <!-- optimal_stop.improved_ev -->
       <p class="text-3xl font-semibold" v-html="retrunColorCodedValue(totalResponse?.optimal_stop?.improved_ev)"></p>
 
-      <p class="text-gray-500 text-xs mt-4">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+      <p class="text-gray-500 text-xs mt-4">Expected value if the stoploss distance is optimal</p>
 
     </div>
 
@@ -158,7 +161,7 @@ const currentValue = computed(() => {
       <button @click="openCumulativePnlModal" :class=[buttonClasses.secondaryButtonClass]> Open Cumulative PnL</button>
     </div>
 
-    <div class="mt-4" >
+    <div class="mt-4">
       <div v-if="activeTab === 'slider'">
         <PnlSliderChart :trades="trades" v-model:maePercentage="maePercentage" :isCumulativeView="false" />
       </div>
@@ -175,30 +178,30 @@ const currentValue = computed(() => {
   <!-- Cumulative PnL Modal -->
   <Modal v-if="isCumulativePnlModalOpen" v-model="isCumulativePnlModalOpen" title="Cumulative PnL Analysis" size="full">
     <div class="w-[100vw] overflow-hidden">
-    <div class="flex gap-4 mb-4">
+      <div class="flex gap-4 mb-4">
 
-      <div :class="[commonBoxClass]">
-        <!--  -->
-        <div class="text-gray-100 text-sm font-semibold mb-4">Stoploss Distance</div>
+        <div :class="[commonBoxClass]">
+          <!--  -->
+          <div class="text-gray-100 text-sm font-semibold mb-4">Stoploss Distance</div>
 
-        <Input label="maePercentage%" type="number" inputClass="w-[150px] text-xl font-semibold"
-          :modelValue="maePercentage" @update:modelValue="handleMaePercentageChange" />
-        <!-- <p class="text-gray-500 text-xs mt-4">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p> -->
+          <Input label="maePercentage%" type="number" inputClass="w-[150px] text-xl font-semibold"
+            :modelValue="maePercentage" @update:modelValue="handleMaePercentageChange" />
+          <!-- <p class="text-gray-500 text-xs mt-4">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p> -->
 
-      </div>
+        </div>
 
-      <div :class="[commonBoxClass]">
-        <!--  -->
-        <div class="text-gray-100 text-sm font-semibold mb-4">Current Value</div>
+        <div :class="[commonBoxClass]">
+          <!--  -->
+          <div class="text-gray-100 text-sm font-semibold mb-4">Current Value</div>
 
-        <p class="text-xl font-semibold" v-html="retrunColorCodedValue(currentValue)"></p>
+          <p class="text-xl font-semibold" v-html="retrunColorCodedValue(currentValue)"></p>
 
-      </div>
+        </div>
 
-      <div :class="[commonBoxClass]">
-        <div class="text-gray-100 text-sm font-semibold mb-4">Expected Value</div>
-        <p class="text-xl font-semibold" v-html="retrunColorCodedValue(totalResponse?.optimal_stop?.improved_ev)"></p>
-      </div>
+        <div :class="[commonBoxClass]">
+          <div class="text-gray-100 text-sm font-semibold mb-4">Expected Value</div>
+          <p class="text-xl font-semibold" v-html="retrunColorCodedValue(totalResponse?.optimal_stop?.improved_ev)"></p>
+        </div>
 
       </div>
     </div>

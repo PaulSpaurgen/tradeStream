@@ -195,6 +195,35 @@ const chartOptions = ref({
   title: {
     text: null
   },
+  tooltip: {
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderColor: '#676768',
+    borderRadius: 6,
+    style: {
+      color: '#ffffff',
+      fontSize: '12px'
+    },
+    formatter: function() {
+      const maeValue = this.x.toFixed(2);
+      const pnlValue = isYaxisPercentage.value 
+        ? (this.y * 100).toFixed(2) + '%'
+        : '$' + formatLargeNumber(this.y);
+      
+      const seriesColor = this.series.color;
+      const seriesName = this.series.name;
+      
+      return `
+        <div style="text-align: left;">
+          <div style="color: ${seriesColor}; font-weight: bold; margin-bottom: 4px;">
+            ● ${seriesName}
+          </div>
+          <div><strong>MAE:</strong> ${maeValue}%</div>
+          <div><strong>PnL:</strong> ${pnlValue}</div>
+        </div>
+      `;
+    },
+    useHTML: true
+  },
 
   xAxis: {
     type: 'linear',
@@ -216,6 +245,9 @@ const chartOptions = ref({
     gridLineColor: '#404040',
     gridLineDashStyle: 'Dash',
     lineWidth: 0,
+    title: {
+      text: null // Remove Y-axis title
+    },
     labels: {
       style: {
         color: '#676768'
