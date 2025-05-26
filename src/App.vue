@@ -5,8 +5,11 @@ import Chart from './components/Chart.vue'
 </script>
 
 <template>
-  <div class="bg-primary-800 w-[500px] h-[100px]">
+  <div class="font-manrope bg-gray-950 w-full h-[100vh]">
+    <div class="px-[50px] text-white-800 pt-[32px]">
+       <Chart/>
+    </div>
+
+
   </div>
-  <div class="bg-red-500 w-[500px] h-[100px]"></div>
-  <div class="bg-og-gray w-[500px] h-[100px]"></div>
 </template>
