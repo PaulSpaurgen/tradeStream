@@ -237,7 +237,7 @@ const updateChartConfigData = () => {
       draggable: 'x',
       events: {
         afterUpdate: function (e) {
-          const newX = Number(this.shapes[0].points[0].x.toFixed(4));
+          const newX = Number(this.shapes[0].points[0].x);
           isUpdatingFromAnnotation.value = true;
           emit('update:maePercentage', newX);
           console.log('Line moved to x:', newX);

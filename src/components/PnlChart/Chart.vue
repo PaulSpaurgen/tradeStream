@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
-import Input from '../atoms/Inputs/Input.vue'
+import Input from '../../atoms/Inputs/Input.vue'
 import PnlSliderChart from './PnlSliderChart.vue'
 import PnlDifferentiatorChart from './PnlDifferentiatorChart.vue'
 import PnlWinRateChart from './PnlWinRateChart.vue'
@@ -17,21 +17,12 @@ const commonBoxClass = "px-[24px] py-[15px] bg-gray-900 rounded-[6px] border-[1p
 
 const handleMaePercentageChange = (newValue) => {
   console.log('MAE Percentage changed:', newValue)
-  
-  // Convert to number if it's a string
   const numericValue = typeof newValue === 'string' ? parseFloat(newValue) : newValue
-  
-  // Add validation if needed
   if (isNaN(numericValue) || numericValue < 0) {
     console.warn('Invalid MAE percentage value:', newValue)
     return
   }
-  
-  // Update the value
   maePercentage.value = numericValue
-  
-  // Add any additional logic here
-  // For example: trigger calculations, API calls, etc.
 }
 
 onMounted(async () => {
@@ -46,14 +37,52 @@ onMounted(async () => {
     if (response && response.data) {
       const safeJson = response.data.replace(/\bNaN\b/g, 'null');
       const parsed = JSON.parse(safeJson);
-      trades.value = parsed?.data?.trades || []
+      trades.value = (parsed?.data?.trades || []).map((val) => {
+        return {
+          ...val,
+          mae_percent: val?.mae_percent * 100
+        }
+      })
       totalResponse.value = parsed?.data || null
+      console.log({totalResponse:totalResponse.value})
     } else {
       console.error('Invalid response:', response);
     }
   } catch (error) {
     console.error('Error fetching data:', error)
   }
+})
+
+const retrunColorCodedValue = (number) => {
+  if (!number && number !== 0) return '<span class="text-gray-400">$0</span>'
+  
+  if(number > 0){
+    return `<span class="text-green-500">+ $${number.toFixed(2)}</span>`
+  }else{
+    return `<span class="text-red-500">- $${Math.abs(number).toFixed(2)}</span>`
+  }
+}
+
+const currentValue = computed(() => {
+  const maePercentageValue = maePercentage.value / 100
+  console.log("maePercentageValue", maePercentageValue)
+  
+  if (!totalResponse.value?.mae_levels || !totalResponse.value?.ev_by_mae) {
+    return 0;
+  }
+  
+  // Find closest match using small tolerance for floating point comparison
+  const tolerance = 0.0001
+  const index = totalResponse.value.mae_levels.findIndex(m => 
+    Math.abs(m - maePercentageValue) < tolerance
+  );
+  
+  console.log("index", index)
+  if (index === -1) {
+    return 0; // or handle case when exact match not found
+  }
+  
+  return totalResponse.value.ev_by_mae[index] || 0;
 })
 </script>
 
@@ -81,7 +110,7 @@ onMounted(async () => {
       <!--  -->
       <div class="text-gray-100 text-md font-semibold mb-4">Current Value</div>
         
-      <p class="text-3xl font-semibold">+ $800</p>
+              <p class="text-3xl font-semibold" v-html="retrunColorCodedValue(currentValue)"></p>
       <p class="text-gray-500 text-xs mt-4">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
 
     </div>
@@ -89,7 +118,9 @@ onMounted(async () => {
     <div :class=[commonBoxClass]>
       <!--  -->
       <div class="text-gray-100 text-md font-semibold mb-4">Expected Value</div>
-      <p class="text-3xl font-semibold">+ $800</p>
+      <!-- optimal_stop.improved_ev -->
+      <p class="text-3xl font-semibold" v-html="retrunColorCodedValue(totalResponse?.optimal_stop?.improved_ev)"></p>
+     
       <p class="text-gray-500 text-xs mt-4">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
 
     </div>
