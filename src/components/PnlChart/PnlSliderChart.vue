@@ -183,10 +183,10 @@ watch(() => props.trades, (newTrades) => {
 
 // watch for changes in maePercentage props
 watch(() => props.maePercentage, (newMaePercentage) => {
-  if (newMaePercentage && !isUpdatingFromAnnotation.value) {
+  if (typeof newMaePercentage === 'number' && !isUpdatingFromAnnotation.value) {
     handleMaePercentageChange(newMaePercentage);
   }
-}, { immediate: true })
+}, { immediate: false })
 
 //  this function calculates the values for updating the chatOptions
 const updateChartConfigData = () => {
@@ -237,10 +237,9 @@ const updateChartConfigData = () => {
       draggable: 'x',
       events: {
         afterUpdate: function (e) {
-          const newX = Number(this.shapes[0].points[0].x);
+          const newX = Number(this.shapes[0].points[0].x.toFixed(4));
           isUpdatingFromAnnotation.value = true;
           emit('update:maePercentage', newX);
-          console.log('Line moved to x:', newX);
 
           // Update the label text to reflect the new position
           if (this.labels && this.labels[0]) {

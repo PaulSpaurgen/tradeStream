@@ -5,12 +5,17 @@ import Input from '../../atoms/Inputs/Input.vue'
 import PnlSliderChart from './PnlSliderChart.vue'
 import PnlDifferentiatorChart from './PnlDifferentiatorChart.vue'
 import PnlWinRateChart from './PnlWinRateChart.vue'
-import { tabGroupClasses } from './commonCssClasses'
+import Modal from '../Modal/Modal.vue'
+import { tabGroupClasses, buttonClasses } from './commonCssClasses'
+import { useModal } from '../../composables/useModal'
 
 const trades = ref([])
 const totalResponse = ref(null)
 const maePercentage = ref(0)
 const activeTab = ref('slider')
+
+// Modal state
+const { isOpen: isCumulativePnlModalOpen, open: openCumulativePnlModal, close: closeCumulativePnlModal } = useModal()
 
 const commonBoxClass = "px-[24px] py-[15px] bg-gray-900 rounded-[6px] border-[1px] border-gray-850 max-w-[300px]"
 
@@ -127,6 +132,7 @@ const currentValue = computed(() => {
 
   </div>
   <div class="mt-4 mb-4 bg-gray-900 rounded-[6px] border-[1px] border-gray-850 p-[24px] ">
+   <div class="flex justify-between w-full">
     <div :class=[tabGroupClasses.parentTabGroupClass]>
       <button 
         @click="activeTab = 'slider'"
@@ -163,6 +169,8 @@ const currentValue = computed(() => {
         Distribution
       </button>
     </div>
+    <button @click="openCumulativePnlModal" :class=[buttonClasses.secondaryButtonClass]> Open Cumulative PnL</button>
+   </div>
 
     <div class="mt-4">
       <div v-show="activeTab === 'slider'">
@@ -177,4 +185,16 @@ const currentValue = computed(() => {
     </div>
     </div>
   </div>
+
+  <!-- Cumulative PnL Modal -->
+  <Modal 
+    v-model="isCumulativePnlModalOpen"
+    title="Cumulative PnL Analysis"
+    size="lg"
+  >
+    <div class="text-center py-8">
+      <h2 class="text-2xl font-bold text-gray-100 mb-4">Cumulative PnL Chart</h2>
+      <p class="text-gray-400">Chart content will be implemented here</p>
+    </div>
+  </Modal>
 </template>
