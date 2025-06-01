@@ -15,6 +15,19 @@ const isLoading = ref(false)
 const currentEVperTrade = ref(0)
 const newEVperTrade = ref(0)
 
+const chartDescriptions = {
+  slider: `With this chart you can
+        test out what stoploss
+        would be ideal in order
+        to minimize losses and
+        maximize wins.`,
+  differentiator: `With this chart you can
+        compare the optimal stoploss PnL with the current stoploss PnL.`,
+  distribution: `With this chart you can
+        analyze the risk of different
+        stoplosses.`
+}
+
 
 
 const handleMaePercentageChange = (newValue) => {
@@ -141,14 +154,20 @@ const retrunColorCodedValue = (number) => {
       </div>
     </div>
     <div :class="[boxClasses.boxClass, 'w-[300px] h-auto flex flex-col gap-4']">
-      <h3 class=" text-lg font-semibold ">Value Insights</h3>
-      <p class="text-gray-400 text-sm mb-[10px]">
-        With this chart you can
-        test out what stoploss
-        would be ideal in order
-        to minimize losses and
-        maximize wins.
-      </p>
+      <h3 class=" text-lg font-semibold ">Insights</h3>
+      <Transition
+        mode="out-in"
+        enter-from-class="opacity-0 translate-y-1"
+        enter-to-class="opacity-100 translate-y-0"
+        enter-active-class="transition-all duration-300 ease-in"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 -translate-y-1"
+        leave-active-class="transition-all duration-300 ease-out"
+      >
+        <p class="text-gray-400 text-sm mb-[10px] min-h-[60px]" :key="activeTab">
+          {{ chartDescriptions[activeTab] }}
+        </p>
+      </Transition>
       <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
         <h3 class="text-gray-400 text-sm mb-[10px]">Current Expected Value per trade</h3>
         <h3 class="text-white-800 text-lg font-semibold mb-[16px]" v-html="retrunColorCodedValue(currentEVperTrade)" />
