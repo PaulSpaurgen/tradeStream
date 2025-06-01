@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed , watch} from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import axios from 'axios'
 import Input from '../../atoms/Inputs/Input.vue'
 import PnlSliderChart from './PnlSliderChart.vue'
@@ -49,7 +49,7 @@ onMounted(async () => {
       })
       totalResponse.value = parsed?.data || null
       const index = totalResponse.value.ev_by_mae.findIndex(m =>
-        Math.abs(m - parsed?.data?.optimal_stop?.improved_ev) < 0.0001
+        Math.abs(m - parsed?.data?.optimal_stop?.improved_ev) < 0.01
       );
       maePercentage.value = totalResponse.value.mae_levels[index] * 100
       currentEVperTrade.value = totalResponse.value.ev_by_mae[index] / totalResponse.value.trades.length
@@ -88,7 +88,7 @@ const retrunColorCodedValue = (number) => {
   if (!number && number !== 0) return '<span class="text-gray-400">$0</span>'
 
   if (number > 0) {
-    return `<span class="text-green-500 text-3xl">+ $${number.toFixed(2)}</span>`
+    return `<span class="text-primary-500 text-3xl">+ $${number.toFixed(2)}</span>`
   } else {
     return `<span class="text-red-500 text-3xl">- $${Math.abs(number).toFixed(2)}</span>`
   }
@@ -100,12 +100,54 @@ const retrunColorCodedValue = (number) => {
   <h1 class="xl:text-5xl text-3xl leading-[52px] tracking-[-1.5px] font-semibold mb-[36px]">Stoploss Optimizer</h1>
   <div class="flex gap-4 w-full">
     <div class="flex-grow">
-      <div :class="[boxClasses.boxClass]">
-        <PnlSliderChart :trades="trades" v-model:maePercentage="maePercentage" :isCumulativeView="false" />
-        
+      <div :class="[boxClasses.boxClass, 'w-full']">
+        <div class="h-[60vh]">
+          <div v-if="activeTab === 'slider'">
+            <PnlSliderChart :trades="trades" v-model:maePercentage="maePercentage" :isCumulativeView="false" />
+          </div>
+          <div v-if="activeTab === 'differentiator'">
+            <PnlDifferentiatorChart :trades="trades" v-model:maePercentage="maePercentage" />
+          </div>
+          <div v-if="activeTab === 'distribution'">
+            <PnlWinRateChart :response="totalResponse" v-model:maePercentage="maePercentage" />
+          </div>
+        </div>
+
+
+        <div :class="[tabGroupClasses.parentTabGroupClass, 'mt-8']">
+          <button @click="activeTab = 'slider'" :class="[
+            'w-full',
+            tabGroupClasses.commonTabClass,
+            activeTab === 'slider'
+              ? tabGroupClasses.selectedTabClass
+              : tabGroupClasses.unselectedTabClass
+          ]">
+            Stoploss Distribution
+
+          </button>
+          <button @click="activeTab = 'differentiator'" :class="[
+            'w-full',
+            tabGroupClasses.commonTabClass,
+            activeTab === 'differentiator'
+              ? tabGroupClasses.selectedTabClass
+              : tabGroupClasses.unselectedTabClass
+          ]">
+            PnL Comparison
+          </button>
+          <button @click="activeTab = 'distribution'" :class="[
+            'w-full',
+            tabGroupClasses.commonTabClass,
+            activeTab === 'distribution'
+              ? tabGroupClasses.selectedTabClass
+              : tabGroupClasses.unselectedTabClass
+          ]">
+            Distribution
+          </button>
+        </div>
+
       </div>
     </div>
-    <div :class="[boxClasses.boxClass, 'w-[300px] h-auto flex flex-col justify-between']">
+    <div :class="[boxClasses.boxClass, 'w-[300px] h-auto flex flex-col gap-4']">
       <h3 class=" text-lg font-semibold ">Value Insights</h3>
       <p class="text-gray-400 text-sm mb-[10px]">
         With this chart you can
@@ -116,19 +158,19 @@ const retrunColorCodedValue = (number) => {
       </p>
       <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
         <h3 class="text-gray-400 text-sm mb-[10px]">Current Expected Value per trade</h3>
-        <h3 class="text-white-800 text-lg font-semibold mb-[16px]" v-html="retrunColorCodedValue(currentEVperTrade)"/>
+        <h3 class="text-white-800 text-lg font-semibold mb-[16px]" v-html="retrunColorCodedValue(currentEVperTrade)" />
       </div>
       <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
         <h3 class="text-gray-400 text-sm mb-[10px]">Expected Value after
           implementing new
           stoploss:</h3>
-        <h3 class="text-white-800 text-lg font-semibold mb-[16px]" v-html="retrunColorCodedValue(newEVperTrade)"/>
+        <h3 class="text-white-800 text-lg font-semibold mb-[16px]" v-html="retrunColorCodedValue(newEVperTrade)" />
       </div>
       <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
         <h3 class="text-gray-400 text-sm mb-[10px]">Stoploss Distance (%) :</h3>
         <!-- <h3 class="text-white-800 text-lg font-semibold mb-[16px]">asdasdsad</h3> -->
-        <Input label="" type="number" inputClass="w-[150px] text-3xl font-semibold"
-        :modelValue="maePercentage" @update:modelValue="handleMaePercentageChange" />
+        <Input label="" type="number" inputClass="w-[150px] text-3xl font-semibold" :modelValue="maePercentage"
+          @update:modelValue="handleMaePercentageChange" />
       </div>
     </div>
 

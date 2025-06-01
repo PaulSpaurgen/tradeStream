@@ -50,6 +50,7 @@ const labelStyle = {
   shape: 'rect'
 }
 const chartOptions = ref({
+  height: 400,
   chart: {
     type: 'scatter',
     backgroundColor: '#262627',
@@ -481,7 +482,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div >
+  <div  >
     <div class="flex justify-between mb-4">
       <p class="text-2xl font-semibold">Stoploss Distribution</p>
       <div :class=[tabGroupClasses.parentTabGroupClass]>
@@ -506,8 +507,8 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <highcharts ref="chartRef" :options="chartOptions" id="high-sky-high"
-      :style="isCumulativeView ? 'height: 25vh; width: 100%;' : ''"></highcharts>
+      <highcharts ref="chartRef" :options="chartOptions" id="high-sky-high"
+       ></highcharts>
 
       <div class="flex w-full justify-center items-center mt-4 gap-2">
         <div class="text-white-800 text-sm">MAE (%)</div>

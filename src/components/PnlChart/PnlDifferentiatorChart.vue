@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { formatLargeNumber } from './PnlChartUtils'
 
 const props = defineProps({
     trades: {
@@ -18,6 +19,7 @@ const props = defineProps({
 })
 
 const chartOptions = ref({
+    height: 400,
     chart: {
         type: 'line',
         backgroundColor: '#262627'
@@ -39,36 +41,73 @@ const chartOptions = ref({
     },
     tooltip: {
         shared: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        borderColor: '#676768',
-        style: {
-            color: '#ffffff'
+        borderRadius: 0,
+        borderWidth: 1,
+        fontFamily: 'Averta',
+        useHTML: true,
+        formatter: function () {
+            const date = new Date(this.x);
+            const formattedDate = date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            // Find the points by series name since indices might change
+            const optimizedPoint = this.points.find(p => p.series.name === 'Current Optimized P&L');
+            const projectedPoint = this.points.find(p => p.series.name === 'Expected P&L');
+
+            const optimizedPnL = optimizedPoint?.y?.toFixed(2) || '0.00';
+            const projectedPnL = projectedPoint?.y?.toFixed(2) || '0.00';
+
+            return `
+                <div style="text-align: left; font-family: Averta;">
+                    <div style="font-size: 12px; color: #676768; margin-bottom: 4px;">${formattedDate}</div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <div>
+                            <span style="color: #5F93F5; font-weight: bold;">Optimized PnL:</span>
+                            <span style="">$${optimizedPnL}</span>
+                        </div>
+                        <div>
+                            <span style="color: #65C49D; font-weight: bold;">Current Projected PnL:</span>
+                            <span style="">$${projectedPnL}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
     },
     xAxis: {
         type: 'linear',
         tickAmount: 10,
-        gridLineWidth: 1,
+        title: null,
+        gridLineWidth: 0,
         gridLineColor: '#404040',
         gridLineDashStyle: 'Dash',
         lineWidth: 0,
         tickWidth: 0,
         labels: {
             style: {
-                color: '#676768'
+                color: '#676768',
+                display: 'none'
             }
         }
     },
     yAxis: {
-        gridLineWidth: 1,
+        gridLineWidth: 0,
         gridLineColor: '#404040',
         gridLineDashStyle: 'Dash',
         lineWidth: 0,
+        title: null,
         labels: {
-      style: {
-        color: '#676768'
-      },
-    },
+
+            style: {
+                color: '#676768',
+            },
+            formatter: function () {
+                return '$' + formatLargeNumber(this.value);
+            }
+        },
     },
     series: []
 })
@@ -100,6 +139,7 @@ const updateChartConfigData = () => {
         return [val?.timestamp, val?.pnl_usd]
     })
 
+
     chartOptions.value = {
         ...chartOptions.value,
         xAxis: {
@@ -110,37 +150,70 @@ const updateChartConfigData = () => {
         },
         series: [
             {
-                name: 'Original P&L',
-                data: usdDataWithoutMae,
-                color: '#B4465A',
-                lineWidth: 2,
-                dashStyle: 'Solid'
-            },
-            {
-                name: 'MAE Projected P&L',
-                data: usdDataWithMae,
-                color: '#54A184',
-                lineWidth: 3,
-                dashStyle: 'Dash'
-            },
-            {
-                name: 'Difference Area',
-                type: 'areaspline',
-                data: usdDataWithoutMae.map((point, index) => [
-                    point[0], // timestamp
-                    usdDataWithMae[index] ? usdDataWithMae[index][1] - point[1] : 0 // difference
-                ]),
-                color: '#C08853',
-                fillOpacity: 0.3,
-                lineWidth: 0,
-                marker: {
-                    enabled: false
-                },
-                enableMouseTracking: true,
-                tooltip: {
-                    pointFormatter: function() {
-                        return `<span style="color:${this.color}">●</span> ${this.series.name}: <b>${this.y > 0 ? '+' : ''}${this.y.toFixed(2)}</b><br/>`
+                name: 'Range Area',
+                type: 'arearange',
+                data: usdDataWithoutMae.map((point, index) => {
+                    const diff = usdDataWithMae[index][1] - point[1];
+                    return {
+                        x: point[0],
+                        low: Math.min(point[1], usdDataWithMae[index][1]),
+                        high: Math.max(point[1], usdDataWithMae[index][1]),
+                        isNegative: diff < 0
                     }
+                }),
+                fillOpacity: 1,
+                enableMouseTracking: true,
+                showInLegend: false,
+                color: {
+                    linearGradient: {
+                        x1: 0,
+                        y1: 0,
+                        x2: 0,
+                        y2: 1
+                    },
+                    stops: [
+                        [0, 'rgba(101, 196, 157, 0.4)'],    // Start with higher opacity
+                        [0.4, 'rgba(101, 196, 157, 0.2)'],  // Middle point
+                        [0.8, 'rgba(101, 196, 157, 0.1)'],  // Fade more gradually
+                        [1, 'rgba(101, 196, 157, 0)']       // Fully transparent at bottom
+                    ]
+                },
+                negativeColor: {
+                    linearGradient: {
+                        x1: 0,
+                        y1: 0,
+                        x2: 0,
+                        y2: 1
+                    },
+                    stops: [
+                        [0, 'rgba(222, 87, 111, 0.4)'],     // Start with higher opacity
+                        [0.4, 'rgba(222, 87, 111, 0.2)'],   // Middle point
+                        [0.8, 'rgba(222, 87, 111, 0.1)'],   // Fade more gradually
+                        [1, 'rgba(222, 87, 111, 0)']        // Fully transparent at bottom
+                    ]
+                },
+                lineWidth: 0,
+                zIndex: -1
+            },
+            {
+                name: 'Current Optimized P&L',
+                data: usdDataWithoutMae,
+                color: '#5F93F5',
+                lineWidth: 2,
+                marker: {
+                    symbol: 'circle',
+                    enabled: false
+
+                }
+            },
+            {
+                name: 'Expected P&L',
+                data: usdDataWithMae,
+                color: '#65C49D',
+                lineWidth: 2,
+                marker: {
+                    symbol: 'circle',
+                    enabled: false
                 }
             }
         ]
@@ -155,15 +228,15 @@ watch(() => props.trades, (newTrades) => {
 
 // Watch for changes in maePercentage
 watch(() => props.maePercentage, () => {
-  if (typeof props.maePercentage === 'number') {
-    updateChartConfigData()
-  }
+    if (typeof props.maePercentage === 'number') {
+        updateChartConfigData()
+    }
 }, { immediate: false })
 </script>
 
 <template>
     <div>
-        <p class="text-gray-100 text-2xl font-semibold mb-4">Differentiator Chart</p>
-        <highcharts :options="chartOptions" id="pnl-differentiator-chart" :style="isCumulativeView ? 'height: 25vh; width: 100%;' : ''"></highcharts>
+        <p class="text-gray-100 text-2xl font-semibold mb-4">PnL Comparison</p>
+        <highcharts :options="chartOptions" id="pnl-differentiator-chart"></highcharts>
     </div>
 </template>
