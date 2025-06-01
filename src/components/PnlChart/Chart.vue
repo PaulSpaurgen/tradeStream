@@ -153,7 +153,7 @@ const retrunColorCodedValue = (number) => {
 
       </div>
     </div>
-    <div :class="[boxClasses.boxClass, 'w-[300px] h-auto flex flex-col gap-4']">
+    <div :class="[boxClasses.boxClass, 'w-[300px] h-fit flex flex-col gap-4']">
       <h3 class=" text-lg font-semibold ">Insights</h3>
       <Transition
         mode="out-in"
