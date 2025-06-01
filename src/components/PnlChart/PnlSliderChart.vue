@@ -493,7 +493,7 @@ onUnmounted(() => {
             ? tabGroupClasses.selectedTabClass
             : tabGroupClasses.unselectedTabClass
         ]">
-          PnL $ <Info title="PnL $" description="PnL is the profit or loss from a trade." />
+          PnL $ <Info title="PnL $" description="PnL $ (Y-axis) is the profit or loss from a trade in USD." />
         </button>
         <button @click="handlePnlClick(true)" :class="[
           'flex gap-2 items-center',
@@ -502,7 +502,7 @@ onUnmounted(() => {
             ? tabGroupClasses.selectedTabClass
             : tabGroupClasses.unselectedTabClass
         ]">
-          PnL % <Info title="PnL %" description="PnL is the profit or loss from a trade." />
+          PnL % <Info title="PnL %" description="PnL % (Y-axis) is the profit or loss from a trade as a percentage of the initial stoploss." />
         </button>
       </div>
     </div>

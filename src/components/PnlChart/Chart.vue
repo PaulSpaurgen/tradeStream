@@ -141,7 +141,7 @@ const retrunColorCodedValue = (number) => {
               ? tabGroupClasses.selectedTabClass
               : tabGroupClasses.unselectedTabClass
           ]">
-            Distribution
+            Trade Risk Analysis
           </button>
         </div>
 

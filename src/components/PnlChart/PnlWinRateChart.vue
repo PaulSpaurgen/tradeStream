@@ -91,7 +91,9 @@ const chartOptions = ref({
                 color: '#676768'
             },
             formatter: function () {
-                return isValueByExpectedValue.value ? '$' + formatLargeNumber(this.value) : this.value + '%';
+                return isValueByExpectedValue.value 
+                    ? '$' + formatLargeNumber(this.value) 
+                    : (this.value * 100).toFixed(1) + '%';
             }
         },
     },
@@ -100,7 +102,10 @@ const chartOptions = ref({
 
 // Function to find the Y-value at the nearest MAE percentage
 const findYValueAtMAE = (maeValue) => {
-    if (!props.response?.mae_levels) return null;
+    if (!props.response?.mae_levels) {
+        console.log('No mae_levels found in response:', props.response)
+        return null;
+    }
 
     // Convert maePercentage from percentage to decimal (e.g., 2.5% -> 0.025)
     const maeDecimal = maeValue / 100;
@@ -122,10 +127,14 @@ const findYValueAtMAE = (maeValue) => {
         ? props.response?.ev_by_mae
         : props.response?.recovery_rate_by_mae;
 
-    return yData ? yData[closestIndex] : null;
+    const yValue = yData ? yData[closestIndex] : null;
+    
+    return yValue;
 }
 
 const updateChartConfigData = () => {
+    console.log('Updating chart with maePercentage:', props.maePercentage)
+    
     // Create data pairs for both percentage and USD series
     const xRange = {
         min: Number.MAX_SAFE_INTEGER,
@@ -134,11 +143,18 @@ const updateChartConfigData = () => {
     const evYaxisData = props.response?.ev_by_mae
     const winRateYaxisData = props.response?.recovery_rate_by_mae
 
+    console.log('EV Data:', evYaxisData)
+    console.log('Win Rate Data:', winRateYaxisData)
+
     const chartData = props.response?.mae_levels?.map((val, i) => {
         xRange.min = Math.min(xRange.min, val)
         xRange.max = Math.max(xRange.max, val)
-        return isValueByExpectedValue.value ? [val, evYaxisData[i] || 0] : [val, winRateYaxisData[i] || 0]
+        return isValueByExpectedValue.value 
+            ? [val , evYaxisData[i] || 0] 
+            : [val, (winRateYaxisData[i] || 0)];
     })
+
+    const yValue = findYValueAtMAE(props.maePercentage);
 
     chartOptions.value = {
         ...chartOptions.value,
@@ -148,7 +164,59 @@ const updateChartConfigData = () => {
             min: xRange.min,
             max: xRange.max
         },
-
+        annotations: [{
+            visible: true,
+            draggable: '',
+            labels: [{
+                point: {
+                    x: props.maePercentage / 100, // Convert percentage to decimal
+                    y: yValue,
+                    xAxis: 0,
+                    yAxis: 0
+                },
+                text: `
+                MAE: ${props.maePercentage}%
+                | ${isValueByExpectedValue.value ? 'Expected Value: $' + yValue?.toFixed(2) : 'Win Rate: ' + (yValue * 100)?.toFixed(1) + '%'}`,
+                backgroundColor: '#FCFEFD',
+                borderColor: '#65C49D',
+                borderWidth: 1,
+                borderRadius: 0,
+                padding: 6,
+                style: {
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    fontFamily: 'Averta'
+                },
+                verticalAlign: 'bottom',
+                y: -10,
+                allowOverlap: true,
+                crop: false,
+                shape: 'rect'
+            }],
+            shapes: [{
+                type: 'path',
+                strokeWidth: 1,
+                stroke: '#65C49D',
+                dashStyle: 'Dash',
+                points: [{
+                    x: props.maePercentage / 100, // Convert percentage to decimal
+                    y: 0,
+                    xAxis: 0,
+                    yAxis: 0
+                }, {
+                    x: props.maePercentage / 100, // Convert percentage to decimal
+                    y: yValue,
+                    xAxis: 0,
+                    yAxis: 0
+                }],
+            }],
+            zIndex: 10,
+            labelOptions: {
+                style: {
+                    fontSize: '11px'
+                }
+            }
+        }],
         series: [
             {
                 name: isValueByExpectedValue.value ? 'Expected Value' : 'Win Rate',
@@ -197,7 +265,7 @@ const handlePnlClick = (value) => {
 <template>
     <div>
         <div class="flex justify-between mb-4">
-            <p class="text-gray-100 text-2xl font-semibold">MAE vs Win Rate chart</p>
+            <p class="text-gray-100 text-2xl font-semibold">Trade Risk Analysis</p>
             <div :class=[tabGroupClasses.parentTabGroupClass]>
                 <button @click="handlePnlClick(true)" :class="[
                     tabGroupClasses.commonTabClass,
