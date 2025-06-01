@@ -59,9 +59,7 @@ const chartOptions = ref({
         const chart = this;
         let isDragging = false;
 
-        // Add mouse events to detect dragging
         chart.container.addEventListener('mousedown', function (e) {
-          // Check if we're clicking on the annotation
           const annotation = chart.annotations[0];
           if (annotation) {
             isDragging = true;
@@ -70,25 +68,41 @@ const chartOptions = ref({
 
         chart.container.addEventListener('mousemove', function (e) {
           if (isDragging) {
-            // Get mouse position relative to chart
             const rect = chart.container.getBoundingClientRect();
             const x = e.clientX - rect.left;
-
-            // Convert pixel position to chart value
             const xValue = chart.xAxis[0].toValue(x - chart.plotLeft);
-
-            // Update label in real-time during drag
+            
+            // Update both the annotation line and label position
             const annotation = chart.annotations[0];
-            if (annotation && annotation.labels && annotation.labels[0]) {
-              annotation.labels[0].update({
-                text: `MAE: ${xValue.toFixed(2)}%`
-              });
+            if (annotation) {
+              // Update the line position
+              annotation.shapes[0].points[0].x = xValue;
+              annotation.shapes[0].points[1].x = xValue;
+              
+              // Update the label position and text
+              if (annotation.labels && annotation.labels[0]) {
+                annotation.labels[0].point.x = xValue;
+                annotation.labels[0].update({
+                  text: `MAE: ${xValue.toFixed(2)}%`
+                }, false);
+              }
+              
+              // Redraw the annotation
+              annotation.redraw();
             }
           }
         });
 
         chart.container.addEventListener('mouseup', function (e) {
-          isDragging = false;
+          if (isDragging) {
+            isDragging = false;
+            // Get final position and emit update
+            const annotation = chart.annotations[0];
+            if (annotation) {
+              const finalX = annotation.shapes[0].points[0].x;
+              emit('update:maePercentage', Number(finalX.toFixed(4)));
+            }
+          }
         });
       },
       redraw: function () {

@@ -65,23 +65,16 @@ onMounted(async () => {
 })
 
 watch(maePercentage, (newVal) => {
-  console.log("newVal", newVal)
-  const maePercentageValue = newVal / 100
-  console.log("maePercentageValue", maePercentageValue)
 
+  const maePercentageValue = newVal / 100
   if (!totalResponse.value?.mae_levels || !totalResponse.value?.ev_by_mae) {
     return 0;
   }
-
   const index = totalResponse.value.mae_levels.findIndex(m =>
     Math.abs(m - maePercentageValue) < 0.0001
   );
 
   newEVperTrade.value = totalResponse.value.ev_by_mae[index] / totalResponse.value.trades.length
-  console.log("newEVperTrade", newEVperTrade.value)
-
-
-
 })
 
 const retrunColorCodedValue = (number) => {
