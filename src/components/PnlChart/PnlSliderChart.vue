@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { tabGroupClasses, boxClasses } from './commonCssClasses'
 import { formatLargeNumber } from './PnlChartUtils'
-import Info from '../../atoms/info.vue'
+import Info from '../../atoms/Info.vue'
 
 const props = defineProps({
   trades: {
