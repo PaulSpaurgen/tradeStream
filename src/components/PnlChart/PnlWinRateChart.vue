@@ -1,12 +1,13 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { tabGroupClasses } from './commonCssClasses'
+import { formatLargeNumber } from './PnlChartUtils'
 
 const props = defineProps({
     response: {
         type: Object,
         required: true,
-        default: () => {}
+        default: () => { }
     },
     maePercentage: {
         type: Number,
@@ -21,6 +22,7 @@ const props = defineProps({
 const isValueByExpectedValue = ref(true)
 
 const chartOptions = ref({
+    height: 400,
     chart: {
         type: 'line',
         backgroundColor: '#262627'
@@ -42,38 +44,57 @@ const chartOptions = ref({
     },
     tooltip: {
         shared: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        borderColor: '#676768',
-        style: {
-            color: '#ffffff'
+        borderRadius: 0,
+        borderWidth: 1,
+        borderColor: '#65C49D',
+        fontFamily: 'Averta',
+        useHTML: true,
+        formatter: function () {
+            const maeValue = (this.x * 100).toFixed(2);
+            const pnlValue = isValueByExpectedValue.value
+                ? '$' + formatLargeNumber(this.y) 
+                : (this.y * 100).toFixed(2) + '%';
+
+            return `
+                <div style="text-align: left; font-family: Averta;">
+                    <div style="font-size: 12px; color: #676768; margin-bottom: 4px;"> <span style=" font-weight: bold;">MAE:</span> ${maeValue}%</div>
+                    <div style="font-size: 12px; color: #676768; margin-bottom: 4px;"> <span style=" font-weight: bold;">${isValueByExpectedValue.value ? 'Expected Value' : 'Win Rate'}:</span> ${pnlValue}</div>
+                </div>
+            `;
         }
+
     },
     xAxis: {
         type: 'linear',
         tickAmount: 10,
-        title: { text: 'MAE Percent' },
-        gridLineWidth: 1,
+        title: null,
+        gridLineWidth: 0,
         gridLineColor: '#404040',
         gridLineDashStyle: 'Dash',
         lineWidth: 0,
         tickWidth: 0,
         labels: {
             style: {
-                color: '#676768'
+                color: '#676768',
+                display: 'none'
             }
         }
     },
     yAxis: {
-        gridLineWidth: 1,
+        gridLineWidth: 0,
         gridLineColor: '#404040',
         gridLineDashStyle: 'Dash',
         lineWidth: 0,
-        
+        title: null,
         labels: {
-            
             style: {
                 color: '#676768'
             },
+            formatter: function () {
+                return isValueByExpectedValue.value 
+                    ? '$' + formatLargeNumber(this.value) 
+                    : (this.value * 100).toFixed(1) + '%';
+            }
         },
     },
     series: []
@@ -81,15 +102,18 @@ const chartOptions = ref({
 
 // Function to find the Y-value at the nearest MAE percentage
 const findYValueAtMAE = (maeValue) => {
-    if (!props.response?.mae_levels) return null;
-    
+    if (!props.response?.mae_levels) {
+        console.log('No mae_levels found in response:', props.response)
+        return null;
+    }
+
     // Convert maePercentage from percentage to decimal (e.g., 2.5% -> 0.025)
     const maeDecimal = maeValue / 100;
-    
+
     // Find the closest MAE level to the current maePercentage
     let closestIndex = 0;
     let minDistance = Infinity;
-    
+
     props.response.mae_levels.forEach((level, index) => {
         const distance = Math.abs(level - maeDecimal);
         if (distance < minDistance) {
@@ -97,16 +121,20 @@ const findYValueAtMAE = (maeValue) => {
             closestIndex = index;
         }
     });
-    
+
     // Get the corresponding Y-value based on current display mode
-    const yData = isValueByExpectedValue.value 
-        ? props.response?.ev_by_mae 
+    const yData = isValueByExpectedValue.value
+        ? props.response?.ev_by_mae
         : props.response?.recovery_rate_by_mae;
+
+    const yValue = yData ? yData[closestIndex] : null;
     
-    return yData ? yData[closestIndex] : null;
+    return yValue;
 }
 
 const updateChartConfigData = () => {
+    console.log('Updating chart with maePercentage:', props.maePercentage)
+    
     // Create data pairs for both percentage and USD series
     const xRange = {
         min: Number.MAX_SAFE_INTEGER,
@@ -114,21 +142,19 @@ const updateChartConfigData = () => {
     }
     const evYaxisData = props.response?.ev_by_mae
     const winRateYaxisData = props.response?.recovery_rate_by_mae
-    
-    const chartData = props.response?.mae_levels?.map((val,i) => {
+
+    console.log('EV Data:', evYaxisData)
+    console.log('Win Rate Data:', winRateYaxisData)
+
+    const chartData = props.response?.mae_levels?.map((val, i) => {
         xRange.min = Math.min(xRange.min, val)
         xRange.max = Math.max(xRange.max, val)
-        return isValueByExpectedValue.value ? [val, evYaxisData[i] || 0] : [val, winRateYaxisData[i] || 0]
+        return isValueByExpectedValue.value 
+            ? [val , evYaxisData[i] || 0] 
+            : [val, (winRateYaxisData[i] || 0)];
     })
 
-    // Get Y-value at the current MAE percentage
-    const yValueAtMAE = findYValueAtMAE(props.maePercentage);
-    const maeDecimal = props.maePercentage / 100;
-
-    // Get Y-axis range for the dashed line
-    const allYValues = chartData?.map(point => point[1]) || [];
-    const yMin = Math.min(...allYValues);
-    const yMax = Math.max(...allYValues);
+    const yValue = findYValueAtMAE(props.maePercentage);
 
     chartOptions.value = {
         ...chartOptions.value,
@@ -138,54 +164,79 @@ const updateChartConfigData = () => {
             min: xRange.min,
             max: xRange.max
         },
-        annotations: yValueAtMAE !== null ? [{
-            draggable: false,
+        annotations: [{
+            visible: true,
+            draggable: '',
+            labels: [{
+                point: {
+                    x: props.maePercentage / 100, // Convert percentage to decimal
+                    y: yValue,
+                    xAxis: 0,
+                    yAxis: 0
+                },
+                text: `
+                MAE: ${props.maePercentage}%
+                | ${isValueByExpectedValue.value ? 'Expected Value: $' + yValue?.toFixed(2) : 'Win Rate: ' + (yValue * 100)?.toFixed(1) + '%'}`,
+                backgroundColor: '#FCFEFD',
+                borderColor: '#65C49D',
+                borderWidth: 1,
+                borderRadius: 0,
+                padding: 6,
+                style: {
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    fontFamily: 'Averta'
+                },
+                verticalAlign: 'bottom',
+                y: -10,
+                allowOverlap: true,
+                crop: false,
+                shape: 'rect'
+            }],
             shapes: [{
-                fill: 'none',
-                stroke: '#B4465A',
-                dashStyle: 'Dash',
-                strokeWidth: 2,
                 type: 'path',
+                strokeWidth: 1,
+                stroke: '#65C49D',
+                dashStyle: 'Dash',
                 points: [{
-                    x: maeDecimal,
-                    y: yMin,
+                    x: props.maePercentage / 100, // Convert percentage to decimal
+                    y: 0,
                     xAxis: 0,
                     yAxis: 0
                 }, {
-                    x: maeDecimal,
-                    y: yValueAtMAE,
+                    x: props.maePercentage / 100, // Convert percentage to decimal
+                    y: yValue,
                     xAxis: 0,
                     yAxis: 0
-                }]
+                }],
             }],
-            labels: [{
-                point: {
-                    x: maeDecimal,
-                    y: yValueAtMAE + (yMax - yMin) * 0.05,
-                    xAxis: 0,
-                    yAxis: 0
-                },
-                text: `MAE: ${props.maePercentage.toFixed(2)}%`,
-                backgroundColor: '#B4465A',
-                borderWidth: 1,
-                borderRadius: 2,
+            zIndex: 10,
+            labelOptions: {
                 style: {
-                    color: '#ffffff',
-                    fontSize: '12px',
-                    fontWeight: 'bold'
-                },
-                y: -5,
-                align: 'center',
-                verticalAlign: 'bottom',
-                distance: 0,
-                shape: 'rect'
-            }]
-        }] : [],
+                    fontSize: '11px'
+                }
+            }
+        }],
         series: [
             {
                 name: isValueByExpectedValue.value ? 'Expected Value' : 'Win Rate',
                 data: chartData,
-                color: '#4B71B7',
+                color: '#54A184',
+                lineWidth: 2,
+                type: 'area',
+                fillOpacity: 0.3,
+                fillColor: {
+                    linearGradient: {
+                        x1: 0,
+                        y1: 0,
+                        x2: 0,
+                        y2: 1
+                    },
+                    stops: [
+                        [0, 'rgba(84, 161, 132, 0.6)'],
+                        [1, 'rgba(84, 161, 132, 0)']
+                    ]
+                }
             }
         ]
     }
@@ -214,26 +265,26 @@ const handlePnlClick = (value) => {
 <template>
     <div>
         <div class="flex justify-between mb-4">
-        <p class="text-gray-100 text-2xl font-semibold">MAE vs Win Rate chart</p>
-        <div :class=[tabGroupClasses.parentTabGroupClass]>
-          <button @click="handlePnlClick(true)" :class="[
-            tabGroupClasses.commonTabClass,
-            isValueByExpectedValue
-              ? tabGroupClasses.selectedTabClass
-              : tabGroupClasses.unselectedTabClass
-          ]">
-           Expected Value
-          </button>
-          <button @click="handlePnlClick(false)" :class="[
-            tabGroupClasses.commonTabClass,
-            !isValueByExpectedValue
-              ? tabGroupClasses.selectedTabClass
-              : tabGroupClasses.unselectedTabClass
-          ]">
-            Win Rate
-          </button>
+            <p class="text-gray-100 text-2xl font-semibold">Trade Risk Analysis</p>
+            <div :class=[tabGroupClasses.parentTabGroupClass]>
+                <button @click="handlePnlClick(true)" :class="[
+                    tabGroupClasses.commonTabClass,
+                    isValueByExpectedValue
+                        ? tabGroupClasses.selectedTabClass
+                        : tabGroupClasses.unselectedTabClass
+                ]">
+                    Expected Value
+                </button>
+                <button @click="handlePnlClick(false)" :class="[
+                    tabGroupClasses.commonTabClass,
+                    !isValueByExpectedValue
+                        ? tabGroupClasses.selectedTabClass
+                        : tabGroupClasses.unselectedTabClass
+                ]">
+                    Win Rate
+                </button>
+            </div>
         </div>
-      </div>
-        <highcharts :options="chartOptions" id="pnl-winrate-chart" :style="isCumulativeView ? 'height: 25vh; width: 100%;' : ''"></highcharts>
+        <highcharts :options="chartOptions" id="pnl-winrate-chart"></highcharts>
     </div>
 </template>

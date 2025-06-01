@@ -75,7 +75,7 @@ const navLinks = ref([
                 <component :is="link.icon" :class="['w-[24px] h-[24px] xl:w-auto xl:h-auto text-gray-700 group-hover:text-primary-500 transition-colors duration-200', { '!text-primary-500': link.isActive }]" />
             </div>
             <div
-                class="text-gray-700 absolute bg-gray-900 top-0 left-[100%] w-max !text-white-800 font-semibold h-full px-[16px] flex items-center opacity-0 group-hover:opacity-100 transition-all duration-200">
+                class="text-gray-700 z-10 absolute bg-gray-900 top-0 left-[100%] w-max !text-white-800 font-semibold h-full px-[16px] flex items-center opacity-0 group-hover:opacity-100 transition-all duration-200">
                 {{ link.name }}
             </div>
 

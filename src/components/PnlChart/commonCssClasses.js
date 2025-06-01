@@ -1,8 +1,8 @@
 export const tabGroupClasses = {
-  parentTabGroupClass: "flex gap-2 p-[4px] bg-gray-950 rounded-[3px] w-fit",
+  parentTabGroupClass: "flex gap-2 p-[4px] bg-gray-950 rounded-[3px]",
   selectedTabClass: "bg-gray-850 text-white-800",
   unselectedTabClass: "text-gray-600 hover:text-gray-300 bg-transparent", 
-  commonTabClass: "px-4 py-2 text-sm font-medium rounded-[2px]"
+  commonTabClass: "px-4 py-2 text-[16px] font-medium rounded-[2px]"
 }
 
 export const buttonClasses = {
@@ -10,5 +10,6 @@ export const buttonClasses = {
 }
 
 export const boxClasses = {
-  boxClass: "p-[24px] bg-gray-900 rounded-[6px] border-[1px] border-gray-850"
+  boxClass: "p-[24px] bg-gray-900 rounded-[6px] border-[1px] border-gray-850",
+  smallBoxClass: "p-[10px] bg-gray-900 rounded-[6px] border-[1px] border-gray-850"
 }

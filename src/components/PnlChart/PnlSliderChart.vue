@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { tabGroupClasses, boxClasses } from './commonCssClasses'
 import { formatLargeNumber } from './PnlChartUtils'
+import Info from '../../atoms/Info.vue'
 
 const props = defineProps({
   trades: {
@@ -22,15 +23,19 @@ const props = defineProps({
 
 const sliderChartStyle = {
   fill: 'none',
-  stroke: '#B4465A',
+  stroke: '#65C49D',
   dashStyle: '',
   strokeWidth: 4,
   type: 'path',
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round'
+
 }
 
 const labelStyle = {
-  backgroundColor: '#B4465A',
-  // borderColor: 'rgba(200, 0, 0, 0.75)',
+  backgroundColor: '#4C9077',
+  borderColor: '#65C49D',
+  fontFamily: 'Averta',
   borderWidth: 1,
   borderRadius: 2,
   style: {
@@ -44,6 +49,150 @@ const labelStyle = {
   distance: 0,
   shape: 'rect'
 }
+const chartOptions = ref({
+  height: 400,
+  chart: {
+    type: 'scatter',
+    backgroundColor: '#262627',
+    events: {
+      load: function () {
+        const chart = this;
+        let isDragging = false;
+
+        chart.container.addEventListener('mousedown', function (e) {
+          const annotation = chart.annotations[0];
+          if (annotation) {
+            isDragging = true;
+          }
+        });
+
+        chart.container.addEventListener('mousemove', function (e) {
+          if (isDragging) {
+            const rect = chart.container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const xValue = chart.xAxis[0].toValue(x - chart.plotLeft);
+            
+            // Update both the annotation line and label position
+            const annotation = chart.annotations[0];
+            if (annotation) {
+              // Update the line position
+              annotation.shapes[0].points[0].x = xValue;
+              annotation.shapes[0].points[1].x = xValue;
+              
+              // Update the label position and text
+              if (annotation.labels && annotation.labels[0]) {
+                annotation.labels[0].point.x = xValue;
+                annotation.labels[0].update({
+                  text: `MAE: ${xValue.toFixed(2)}%`
+                }, false);
+              }
+              
+              // Redraw the annotation
+              annotation.redraw();
+            }
+          }
+        });
+
+        chart.container.addEventListener('mouseup', function (e) {
+          if (isDragging) {
+            isDragging = false;
+            // Get final position and emit update
+            const annotation = chart.annotations[0];
+            if (annotation) {
+              const finalX = annotation.shapes[0].points[0].x;
+              emit('update:maePercentage', Number(finalX.toFixed(4)));
+            }
+          }
+        });
+      },
+      redraw: function () {
+        // Fix annotation positioning after chart redraw
+        const chart = this;
+        setTimeout(() => {
+          if (chart.annotations && chart.annotations[0]) {
+            updateAnnotationToFullHeight(props.maePercentage);
+          }
+        }, 10);
+      }
+    }
+  },
+  title: {
+    text: null
+  },
+  tooltip: {
+    borderRadius: 0,
+    borderWidth:1,
+    fontFamily: 'Averta',
+    formatter: function () {
+      const maeValue = this.x.toFixed(2);
+      const pnlValue = isYaxisPercentage.value
+        ? (this.y * 100).toFixed(2) + '%'
+        : '$' + formatLargeNumber(this.y);
+
+      const seriesColor = this.series.color;
+      const seriesName = this.series.name;
+      this.borderColor = seriesColor;
+
+      return `
+        <div style="text-align: left; font-family: Averta;">
+          <div style="font-size: 12px; font-weight: bold; color:${seriesColor}; margin-bottom: 4px;">${seriesName}</div>
+          <div><strong>MAE:</strong> ${maeValue}%</div>
+          <div><strong>PnL:</strong> ${pnlValue}</div>
+        </div>
+      `;
+    },
+    useHTML: true
+  },
+
+  xAxis: {
+    type: 'linear',
+    tickAmount: 10,
+    title: null,
+    gridLineWidth: 0,
+    gridLineColor: '#404040',
+    gridLineDashStyle: 'Dash',
+    lineWidth: 0,
+    tickWidth: 0,
+    labels: {
+      style: {
+        color: '#676768',
+        display: 'none'
+      }
+    }
+  },
+  yAxis: {
+    gridLineWidth: 0,
+    gridLineColor: '#404040',
+    gridLineDashStyle: 'Dash',
+    lineWidth: 0,
+    title: {
+      text: null // Remove Y-axis title
+    },
+    labels: {
+      
+      style: {
+        color: '#676768',
+      },
+      formatter: function () {
+        if (isYaxisPercentage.value) {
+          return (this.value * 100).toFixed(1) + '%';
+        } else {
+          return '$' + formatLargeNumber(this.value);
+        }
+      }
+    },
+    events: {
+      setExtremes: function (e) {
+        // Update annotation when Y-axis extremes change
+        setTimeout(() => {
+          updateAnnotationToFullHeight(props.maePercentage);
+        }, 0);
+      }
+    }
+  },
+  annotations: [],
+  series: []
+})
 
 const emit = defineEmits(['update:maePercentage'])
 const sliderLimits = ref({
@@ -78,19 +227,19 @@ const updateAnnotationToFullHeight = (xValue) => {
     if (annotation) {
       // Remove the existing annotation completely
       chart.removeAnnotation(annotation);
-      
+
       // Add a fresh annotation with the new position
       chart.addAnnotation({
         draggable: 'x',
         events: {
           afterUpdate: function (e) {
             const newX = Number(this.shapes[0].points[0].x.toFixed(4));
-            
+
             // Only emit the final value change (after drag is complete)
             if (!isUpdatingFromAnnotation.value) {
               isUpdatingFromAnnotation.value = true;
               emit('update:maePercentage', newX);
-              
+
               setTimeout(() => {
                 isUpdatingFromAnnotation.value = false;
               }, 0);
@@ -126,144 +275,11 @@ const updateAnnotationToFullHeight = (xValue) => {
   }
 }
 
-// Helper function to format large numbers
 
 
-const chartOptions = ref({
-  chart: {
-    type: 'scatter',
-    backgroundColor: '#262627',
-    events: {
-      load: function() {
-        const chart = this;
-        let isDragging = false;
-        
-        // Add mouse events to detect dragging
-        chart.container.addEventListener('mousedown', function(e) {
-          // Check if we're clicking on the annotation
-          const annotation = chart.annotations[0];
-          if (annotation) {
-            isDragging = true;
-          }
-        });
-        
-        chart.container.addEventListener('mousemove', function(e) {
-          if (isDragging) {
-            // Get mouse position relative to chart
-            const rect = chart.container.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            
-            // Convert pixel position to chart value
-            const xValue = chart.xAxis[0].toValue(x - chart.plotLeft);
-            
-            // Update label in real-time during drag
-            const annotation = chart.annotations[0];
-            if (annotation && annotation.labels && annotation.labels[0]) {
-              annotation.labels[0].update({
-                text: `MAE: ${xValue.toFixed(2)}%`
-              });
-            }
-          }
-        });
-        
-        chart.container.addEventListener('mouseup', function(e) {
-          isDragging = false;
-        });
-      },
-      redraw: function() {
-        // Fix annotation positioning after chart redraw
-        const chart = this;
-        setTimeout(() => {
-          if (chart.annotations && chart.annotations[0]) {
-            updateAnnotationToFullHeight(props.maePercentage);
-          }
-        }, 50);
-      }
-    }
-  },
-  title: {
-    text: null
-  },
-  tooltip: {
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderColor: '#676768',
-    borderRadius: 6,
-    style: {
-      color: '#ffffff',
-      fontSize: '12px'
-    },
-    formatter: function() {
-      const maeValue = this.x.toFixed(2);
-      const pnlValue = isYaxisPercentage.value 
-        ? (this.y * 100).toFixed(2) + '%'
-        : '$' + formatLargeNumber(this.y);
-      
-      const seriesColor = this.series.color;
-      const seriesName = this.series.name;
-      
-      return `
-        <div style="text-align: left;">
-          <div style="color: ${seriesColor}; font-weight: bold; margin-bottom: 4px;">
-            ● ${seriesName}
-          </div>
-          <div><strong>MAE:</strong> ${maeValue}%</div>
-          <div><strong>PnL:</strong> ${pnlValue}</div>
-        </div>
-      `;
-    },
-    useHTML: true
-  },
-
-  xAxis: {
-    type: 'linear',
-    tickAmount: 10,
-    title: { text: 'MAE Percent' },
-    gridLineWidth: 1,
-    gridLineColor: '#404040',
-    gridLineDashStyle: 'Dash',
-    lineWidth: 0,
-    tickWidth: 0,
-    labels: {
-      style: {
-        color: '#676768'
-      }
-    }
-  },
-  yAxis: {
-    gridLineWidth: 1,
-    gridLineColor: '#404040',
-    gridLineDashStyle: 'Dash',
-    lineWidth: 0,
-    title: {
-      text: null // Remove Y-axis title
-    },
-    labels: {
-      style: {
-        color: '#676768'
-      },
-      formatter: function () {
-        if (isYaxisPercentage.value) {
-          return (this.value * 100).toFixed(1) + '%';
-        } else {
-          return '$' + formatLargeNumber(this.value);
-        }
-      }
-    },
-    events: {
-      setExtremes: function (e) {
-        // Update annotation when Y-axis extremes change
-        setTimeout(() => {
-          updateAnnotationToFullHeight(props.maePercentage);
-        }, 50);
-      }
-    }
-  },
-  annotations: [],
-  series: []
-})
 
 
-const isYaxisPercentage = ref(true)
+const isYaxisPercentage = ref(false)
 const isUpdatingFromAnnotation = ref(false)
 
 //  this function calculates the values for updating the chatOptions
@@ -316,19 +332,19 @@ const updateChartConfigData = () => {
       events: {
         afterUpdate: function (e) {
           const newX = Number(this.shapes[0].points[0].x.toFixed(4));
-          
+
           // Only emit the final value change (after drag is complete)
           if (!isUpdatingFromAnnotation.value) {
             isUpdatingFromAnnotation.value = true;
             emit('update:maePercentage', newX);
-            
+
             // Update label with final value
             if (this.labels && this.labels[0]) {
               this.labels[0].update({
                 text: `MAE: ${newX.toFixed(2)}%`
               });
             }
-            
+
             setTimeout(() => {
               isUpdatingFromAnnotation.value = false;
             }, 0);
@@ -363,15 +379,50 @@ const updateChartConfigData = () => {
     series: [{
       name: 'Winning Trades',
       data: winningTrades,
-      color: '#22c55e',
-      showInLegend: false
+      color: '#4C9077',
+      showInLegend: false,
+      marker: {
+        radius: 3, // Size of the marker
+        symbol: 'circle', // Shape of the marker
+        lineWidth: 1, // Width of the marker's border
+        lineColor: '#4C9077', // Color of the marker's border
+        fillColor: '#65C49D' // Fill color of the marker
+      }
     }, {
       name: 'Losing Trades',
       data: losingTrades,
-      color: '#ef4444',
-      showInLegend: false
+      color: '#B4465A',
+      showInLegend: false,
+      marker: {
+        radius: 3, // Size of the marker
+        symbol: 'circle', // Shape of the marker
+        lineWidth: 1, // Width of the marker's border
+        lineColor: '#B4465A', // Color of the marker's border
+        fillColor: '#DE576F' // Fill color of the marker
+      }
     }]
   };
+}
+
+
+const handleMaePercentageChange = (newMaePercentage) => {
+  // Use the generalized function for robust annotation updates
+  updateAnnotationToFullHeight(newMaePercentage);
+}
+
+const handlePnlClick = (isPercentage) => {
+  // Only update if the state is actually changing
+  if (isYaxisPercentage.value === isPercentage) return
+
+  isYaxisPercentage.value = isPercentage
+
+  updateChartConfigData()
+
+  // Use nextTick to ensure chart is updated before refreshing annotation
+  nextTick(() => {
+    // Refresh annotation to full height after chart data changes
+    updateAnnotationToFullHeight(props.maePercentage);
+  });
 }
 
 // Watch for changes in trades prop
@@ -428,7 +479,7 @@ onMounted(() => {
         }
       }
     });
-    
+
     // Observe the chart container
     const chartContainer = chartRef.value.$el || chartRef.value;
     if (chartContainer) {
@@ -442,52 +493,40 @@ onUnmounted(() => {
     resizeObserver.disconnect();
   }
 })
-
-const handleMaePercentageChange = (newMaePercentage) => {
-  // Use the generalized function for robust annotation updates
-  updateAnnotationToFullHeight(newMaePercentage);
-}
-
-const handlePnlClick = (isPercentage) => {
-  // Only update if the state is actually changing
-  if (isYaxisPercentage.value === isPercentage) return
-
-  isYaxisPercentage.value = isPercentage
-
-  updateChartConfigData()
-
-  // Use nextTick to ensure chart is updated before refreshing annotation
-  nextTick(() => {
-    // Refresh annotation to full height after chart data changes
-    updateAnnotationToFullHeight(props.maePercentage);
-  });
-}
 </script>
 
 <template>
-  <div :class="[boxClasses.boxClass]">
+  <div  >
     <div class="flex justify-between mb-4">
-        <p class="text-2xl font-semibold">Stoploss Distribution</p>
-        <div :class=[tabGroupClasses.parentTabGroupClass]>
-          <button @click="handlePnlClick(true)" :class="[
-            tabGroupClasses.commonTabClass,
-            isYaxisPercentage
-              ? tabGroupClasses.selectedTabClass
-              : tabGroupClasses.unselectedTabClass
-          ]">
-            PnL %
-          </button>
-          <button @click="handlePnlClick(false)" :class="[
-            tabGroupClasses.commonTabClass,
-            !isYaxisPercentage
-              ? tabGroupClasses.selectedTabClass
-              : tabGroupClasses.unselectedTabClass
-          ]">
-            PnL $
-          </button>
-        </div>
+      <p class="text-2xl font-semibold">Stoploss Distribution</p>
+      <div :class=[tabGroupClasses.parentTabGroupClass]>
+        <button @click="handlePnlClick(false)" :class="[
+          'flex gap-2 items-center',
+          tabGroupClasses.commonTabClass,
+          !isYaxisPercentage
+            ? tabGroupClasses.selectedTabClass
+            : tabGroupClasses.unselectedTabClass
+        ]">
+          PnL $ <Info title="PnL $" description="PnL $ (Y-axis) is the profit or loss from a trade in USD." />
+        </button>
+        <button @click="handlePnlClick(true)" :class="[
+          'flex gap-2 items-center',
+          tabGroupClasses.commonTabClass,
+          isYaxisPercentage
+            ? tabGroupClasses.selectedTabClass
+            : tabGroupClasses.unselectedTabClass
+        ]">
+          PnL % <Info title="PnL %" description="PnL % (Y-axis) is the profit or loss from a trade as a percentage of the initial stoploss." />
+        </button>
       </div>
-      
-      <highcharts ref="chartRef" :options="chartOptions" id="high-sky-high" :style="isCumulativeView ? 'height: 25vh; width: 100%;' : ''"></highcharts>
+    </div>
+
+      <highcharts ref="chartRef" :options="chartOptions" id="high-sky-high"
+       ></highcharts>
+
+      <div class="flex w-full justify-center items-center mt-4 gap-2">
+        <div class="text-white-800 text-sm">MAE (%)</div>
+        <Info title="MAE" description="MAE is the average of the absolute difference between the actual stoploss and the optimal stoploss." />
+      </div>
   </div>
 </template>
