@@ -1,11 +1,36 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap');
 
+/* Averta Font Face Declarations */
+@font-face {
+  font-family: 'Averta';
+  src: url('/fonts/averta/avertastd-regular.8d1ded9.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Averta';
+  src: url('/fonts/averta/avertastd-semibold.d06fa21.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Averta';
+  src: url('/fonts/averta/avertastd-bold.8d0bb53.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  font-family: 'Manrope', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Averta', system-ui, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   background-color: #1C1C1D;

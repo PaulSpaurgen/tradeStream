@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'manrope': ['Manrope', 'sans-serif'],
+        'averta': ['Averta', 'sans-serif'],
       },
       colors: {
         'og-gray':'#111112',

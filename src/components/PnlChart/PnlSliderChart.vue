@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { tabGroupClasses } from './commonCssClasses'
+import { tabGroupClasses, boxClasses } from './commonCssClasses'
 import { formatLargeNumber } from './PnlChartUtils'
 
 const props = defineProps({
@@ -465,9 +465,9 @@ const handlePnlClick = (isPercentage) => {
 </script>
 
 <template>
-  <div>
+  <div :class="[boxClasses.boxClass]">
     <div class="flex justify-between mb-4">
-        <p class="text-gray-100 text-2xl font-semibold">MAE vs PnL chart</p>
+        <p class="text-2xl font-semibold">Stoploss Distribution</p>
         <div :class=[tabGroupClasses.parentTabGroupClass]>
           <button @click="handlePnlClick(true)" :class="[
             tabGroupClasses.commonTabClass,
