@@ -6,7 +6,7 @@ import PnlDifferentiatorChart from './PnlDifferentiatorChart.vue'
 import PnlWinRateChart from './PnlWinRateChart.vue'
 import { tabGroupClasses, buttonClasses, boxClasses } from './commonCssClasses'
 import { stoplossService } from '../../services/stoplossService'
-
+import { chartDescriptions } from './PnlChartUtils'
 
 const trades = ref([])
 const totalResponse = ref(null)
@@ -22,18 +22,7 @@ const newEVperTrade = ref(0)
 
 
 
-const chartDescriptions = {
-  slider: `With this chart you can
-        test out what stoploss
-        would be ideal in order
-        to minimize losses and
-        maximize wins.`,
-  differentiator: `With this chart you can
-        compare the optimal stoploss PnL with the current stoploss PnL.`,
-  distribution: `With this chart you can
-        analyze the risk of different
-        stoplosses.`
-}
+
 
 
 
@@ -57,7 +46,7 @@ onMounted(async () => {
   calculateTotalValue()
 })
 
-watch(maePercentage, (newVal) => {
+watch(maePercentage, () => {
   calculateTotalValue()
 
 })
@@ -104,17 +93,11 @@ const retrunColorCodedValue = (number) => {
   if (!number && number !== 0) return '<span class="text-gray-400">$0</span>'
 
   if (number > 0) {
-    return `<span class="text-primary-500 text-xl"> $${number.toFixed(2)}</span>`
+    return `<span class="text-primary-500 text-2xl font-semibold"> $${number.toFixed(2)}</span>`
   } else {
-    return `<span class="text-red-500 text-xl">- $${Math.abs(number).toFixed(2)}</span>`
+    return `<span class="text-red-500 text-2xl font-semibold">- $${Math.abs(number).toFixed(2)}</span>`
   }
 }
-
-
-
-
-
-
 </script>
 
 <template>

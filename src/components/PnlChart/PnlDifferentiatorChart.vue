@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
-import { formatLargeNumber } from './PnlChartUtils'
+import { formatLargeNumber, chartDescriptions } from './PnlChartUtils'
+import Info from '../../atoms/Info.vue'
 
 const props = defineProps({
     trades: {
@@ -97,12 +98,12 @@ const chartOptions = computed(() => ({
                     <div style="font-size: 12px; color: #676768; margin-bottom: 4px;">${formattedDate}</div>
                     <div style="display: flex; flex-direction: column; gap: 4px;">
                         <div>
-                            <span style="color: #5F93F5; font-weight: bold;">Optimized PnL:</span>
-                            <span style="">$${optimizedPnL}</span>
+                            <span style="color: ${props.currentTotalProfit > props.newTotalProfit ? '#DE576F' : '#65C49D'}; font-weight: bold;">Expected PnL:</span>
+                            <span style="">$${projectedPnL}</span>
                         </div>
                         <div>
-                            <span style="color: #65C49D; font-weight: bold;">Current Projected PnL:</span>
-                            <span style="">$${projectedPnL}</span>
+                            <span style="color: #5F93F5; font-weight: bold;">Current PnL:</span>
+                            <span style="">$${optimizedPnL}</span>
                         </div>
                     </div>
                 </div>
@@ -121,7 +122,6 @@ const chartOptions = computed(() => ({
         labels: {
             style: {
                 color: '#676768',
-                display: 'none'
             }
         }
     },
@@ -235,7 +235,7 @@ watch(() => props.maePercentage, () => {
 
 <template>
     <div>
-        <p class="text-gray-100 text-2xl font-semibold mb-4">PnL Comparison</p>
+        <p class="text-gray-100 text-2xl font-semibold mb-4">PnL Comparison <span ><Info title="PnL Comparison" :description="chartDescriptions.differentiator" /></span></p>
         <highcharts :options="chartOptions" id="pnl-differentiator-chart"></highcharts>
     </div>
 </template>
