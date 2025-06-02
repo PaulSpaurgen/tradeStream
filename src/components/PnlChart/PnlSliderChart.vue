@@ -277,21 +277,19 @@ const updateAnnotationToFullHeight = (xValue) => {
 const isYaxisPercentage = ref(false)
 const isUpdatingFromAnnotation = ref(false)
 
-//  this function calculates the values for updating the chatOptions
+
 const updateChartConfigData = () => {
   const xRange = {
     min: Number.MAX_SAFE_INTEGER,
     max: Number.MIN_SAFE_INTEGER
   }
   const trades = props.trades
-  // Create data pairs for the chart
-
   const dataPairs = trades.map((value, i) => {
     if (value?.mae_percent && value?.pnl_percent) {
-      xRange.min = Math.min(xRange.min, value.mae_percent);
-      xRange.max = Math.max(xRange.max, value.mae_percent);
+      xRange.min = Math.min(xRange.min, value.mae_percent * 100);
+      xRange.max = Math.max(xRange.max, value.mae_percent * 100);
     }
-    return isYaxisPercentage.value ? [value.mae_percent, value.pnl_percent] : [value.mae_percent, value.pnl_usd]
+    return isYaxisPercentage.value ? [value.mae_percent * 100, value.pnl_percent] : [value.mae_percent * 100, value.pnl_usd]
   });
 
   const losingTrades = dataPairs.filter(trade => trade[1] < 0)

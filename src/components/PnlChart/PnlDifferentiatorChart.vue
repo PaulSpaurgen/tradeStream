@@ -13,9 +13,16 @@ const props = defineProps({
         required: true,
         default: 0
     },
-    isCumulativeView: {
-        type: Boolean,
-        default: false
+    currentTotalProfit: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    newTotalProfit: {
+        type: Number,
+        required: true,
+        default: 0
+
     }
 })
 
@@ -23,10 +30,11 @@ const cumilativeReturnCalculator = (trades, withMae) => {
     let cumulativeProfit = 0;
     return trades.map((trade) => {
         let pnlValue = trade.pnl_usd;
+        const maePercentage = props.maePercentage / 100
         
-        if (withMae && trade.mae_percent > props.maePercentage) {
+        if (withMae && trade.mae_percent > maePercentage) {
             const pnl_without_fees = trade.pnl_usd - trade.fees;
-            pnlValue = (Math.abs(pnl_without_fees) * (props.maePercentage / trade.mae_percent)) + trade.fees;
+            pnlValue = (Math.abs(pnl_without_fees) * (maePercentage / trade.mae_percent)) + trade.fees;
         }
         
         cumulativeProfit += pnlValue;
@@ -158,7 +166,7 @@ const chartOptions = computed(() => ({
             fillOpacity: 1,
             enableMouseTracking: true,
             showInLegend: false,
-            color: {
+            color: props.currentTotalProfit < props.newTotalProfit ? {
                 linearGradient: {
                     x1: 0,
                     y1: 0,
@@ -166,13 +174,10 @@ const chartOptions = computed(() => ({
                     y2: 1
                 },
                 stops: [
-                    [0, 'rgba(101, 196, 157, 0.4)'],    // Start with higher opacity
-                    [0.4, 'rgba(101, 196, 157, 0.2)'],  // Middle point
-                    [0.8, 'rgba(101, 196, 157, 0.1)'],  // Fade more gradually
-                    [1, 'rgba(101, 196, 157, 0)']       // Fully transparent at bottom
+                    [0, 'rgba(101, 196, 157, 0.4)'], 
+                    [1, 'rgba(101, 196, 157, 0)']     
                 ]
-            },
-            negativeColor: {
+            }: {
                 linearGradient: {
                     x1: 0,
                     y1: 0,
@@ -180,10 +185,8 @@ const chartOptions = computed(() => ({
                     y2: 1
                 },
                 stops: [
-                    [0, 'rgba(222, 87, 111, 0.4)'],     // Start with higher opacity
-                    [0.4, 'rgba(222, 87, 111, 0.2)'],   // Middle point
-                    [0.8, 'rgba(222, 87, 111, 0.1)'],   // Fade more gradually
-                    [1, 'rgba(222, 87, 111, 0)']        // Fully transparent at bottom
+                    [0, 'rgba(222, 87, 111, 0.4)'], 
+                    [1, 'rgba(222, 87, 111, 0)']     
                 ]
             },
             lineWidth: 0,
@@ -201,8 +204,8 @@ const chartOptions = computed(() => ({
         },
         {
             name: 'Expected P&L',
-            data: optimizedReturns.value,
-            color: '#65C49D',
+            data:  optimizedReturns.value,
+            color: props.currentTotalProfit > props.newTotalProfit ? '#DE576F' : '#65C49D',
             lineWidth: 2,
             marker: {
                 symbol: 'circle',
