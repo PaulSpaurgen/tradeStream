@@ -1,7 +1,9 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { tabGroupClasses } from './commonCssClasses'
-import { formatLargeNumber } from './PnlChartUtils'
+import { formatLargeNumber, chartDescriptions } from './PnlChartUtils'
+import Info from '../../atoms/Info.vue'
+
 
 const props = defineProps({
     response: {
@@ -265,7 +267,7 @@ const handlePnlClick = (value) => {
 <template>
     <div>
         <div class="flex justify-between mb-4">
-            <p class="text-gray-100 text-2xl font-semibold">Trade Risk Analysis</p>
+            <p class="text-gray-100 text-2xl font-semibold">Trade Risk Analysis <span ><Info title="Trade Risk Analysis" :description="chartDescriptions.distribution" /></span></p>
             <div :class=[tabGroupClasses.parentTabGroupClass]>
                 <button @click="handlePnlClick(true)" :class="[
                     tabGroupClasses.commonTabClass,

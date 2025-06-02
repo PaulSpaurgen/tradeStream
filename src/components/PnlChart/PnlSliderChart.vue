@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { tabGroupClasses, boxClasses } from './commonCssClasses'
 import { formatLargeNumber } from './PnlChartUtils'
 import Info from '../../atoms/Info.vue'
+import { chartDescriptions } from './PnlChartUtils'
 
 const props = defineProps({
   trades: {
@@ -156,7 +157,6 @@ const chartOptions = ref({
     labels: {
       style: {
         color: '#676768',
-        display: 'none'
       }
     }
   },
@@ -205,19 +205,16 @@ const getFullChartYRange = () => {
   if (chartRef.value && chartRef.value.chart) {
     const chart = chartRef.value.chart;
     const yAxis = chart.yAxis[0];
-
-    // Get the actual Y-axis extremes (visible range)
     const yMin = yAxis.min;
     const yMax = yAxis.max;
 
     return { min: yMin, max: yMax };
   }
 
-  // Fallback to sliderLimits if chart is not available
   return { min: sliderLimits.value.min, max: sliderLimits.value.max };
 }
 
-// Robust function to update annotation line to full chart height
+
 const updateAnnotationToFullHeight = (xValue) => {
   if (chartRef.value && chartRef.value.chart) {
     const chart = chartRef.value.chart;
@@ -225,17 +222,12 @@ const updateAnnotationToFullHeight = (xValue) => {
     const yRange = getFullChartYRange();
 
     if (annotation) {
-      // Remove the existing annotation completely
       chart.removeAnnotation(annotation);
-
-      // Add a fresh annotation with the new position
       chart.addAnnotation({
         draggable: 'x',
         events: {
           afterUpdate: function (e) {
             const newX = Number(this.shapes[0].points[0].x.toFixed(4));
-
-            // Only emit the final value change (after drag is complete)
             if (!isUpdatingFromAnnotation.value) {
               isUpdatingFromAnnotation.value = true;
               emit('update:maePercentage', newX);
@@ -274,29 +266,22 @@ const updateAnnotationToFullHeight = (xValue) => {
     }
   }
 }
-
-
-
-
-
 const isYaxisPercentage = ref(false)
 const isUpdatingFromAnnotation = ref(false)
 
-//  this function calculates the values for updating the chatOptions
+
 const updateChartConfigData = () => {
   const xRange = {
     min: Number.MAX_SAFE_INTEGER,
     max: Number.MIN_SAFE_INTEGER
   }
   const trades = props.trades
-  // Create data pairs for the chart
-
   const dataPairs = trades.map((value, i) => {
     if (value?.mae_percent && value?.pnl_percent) {
-      xRange.min = Math.min(xRange.min, value.mae_percent);
-      xRange.max = Math.max(xRange.max, value.mae_percent);
+      xRange.min = Math.min(xRange.min, value.mae_percent * 100);
+      xRange.max = Math.max(xRange.max, value.mae_percent * 100);
     }
-    return isYaxisPercentage.value ? [value.mae_percent, value.pnl_percent] : [value.mae_percent, value.pnl_usd]
+    return isYaxisPercentage.value ? [value.mae_percent * 100, value.pnl_percent] : [value.mae_percent * 100, value.pnl_usd]
   });
 
   const losingTrades = dataPairs.filter(trade => trade[1] < 0)
@@ -307,9 +292,8 @@ const updateChartConfigData = () => {
   const yMin = Math.min(...allYValues);
   const yMax = Math.max(...allYValues);
 
-  // Extend Y range for full chart height annotation
   const yRange = yMax - yMin;
-  const yPadding = yRange * 0.1; // 10% padding
+  const yPadding = yRange * 0.1; 
   const fullYMin = yMin - yPadding;
   const fullYMax = yMax + yPadding;
 
@@ -318,8 +302,6 @@ const updateChartConfigData = () => {
     max: fullYMax
   }
 
-  // Don't mutate prop directly, emit to parent if needed
-  // emit('update:maePercentage', xRange.max);
   chartOptions.value = {
     ...chartOptions.value,
     xAxis: {
@@ -382,11 +364,11 @@ const updateChartConfigData = () => {
       color: '#4C9077',
       showInLegend: false,
       marker: {
-        radius: 3, // Size of the marker
-        symbol: 'circle', // Shape of the marker
-        lineWidth: 1, // Width of the marker's border
-        lineColor: '#4C9077', // Color of the marker's border
-        fillColor: '#65C49D' // Fill color of the marker
+        radius: 3, 
+        symbol: 'circle',
+        lineWidth: 1,
+        lineColor: '#4C9077',
+        fillColor: '#65C49D'
       }
     }, {
       name: 'Losing Trades',
@@ -394,11 +376,11 @@ const updateChartConfigData = () => {
       color: '#B4465A',
       showInLegend: false,
       marker: {
-        radius: 3, // Size of the marker
-        symbol: 'circle', // Shape of the marker
-        lineWidth: 1, // Width of the marker's border
-        lineColor: '#B4465A', // Color of the marker's border
-        fillColor: '#DE576F' // Fill color of the marker
+        radius: 3,
+        symbol: 'circle',
+        lineWidth: 1,
+        lineColor: '#B4465A',
+        fillColor: '#DE576F'
       }
     }]
   };
@@ -498,7 +480,7 @@ onUnmounted(() => {
 <template>
   <div  >
     <div class="flex justify-between mb-4">
-      <p class="text-2xl font-semibold">Stoploss Distribution</p>
+      <p class="text-2xl font-semibold">Stoploss Distribution <span ><Info title="Stoploss Distribution" :description="chartDescriptions.slider" /></span></p>
       <div :class=[tabGroupClasses.parentTabGroupClass]>
         <button @click="handlePnlClick(false)" :class="[
           'flex gap-2 items-center',

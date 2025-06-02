@@ -15,3 +15,15 @@ export const formatLargeNumber = (value) => {
     // Remove trailing zeros after decimal point
     return formattedValue.replace(/\.?0+$/, '')
 }
+export const chartDescriptions = {
+  slider: `With this chart you can
+        test out what stoploss
+        would be ideal in order
+        to minimize losses and
+        maximize wins.`,
+  differentiator: `With this chart you can
+        compare the Expected Value of the stoploss PnL with the current stoploss PnL.`,
+  distribution: `With this chart you can
+        analyze the risk of different
+        stoplosses.`
+}

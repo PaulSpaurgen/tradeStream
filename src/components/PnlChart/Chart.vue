@@ -1,32 +1,28 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import axios from 'axios'
 import Input from '../../atoms/Inputs/Input.vue'
 import PnlSliderChart from './PnlSliderChart.vue'
 import PnlDifferentiatorChart from './PnlDifferentiatorChart.vue'
 import PnlWinRateChart from './PnlWinRateChart.vue'
 import { tabGroupClasses, buttonClasses, boxClasses } from './commonCssClasses'
+import { stoplossService } from '../../services/stoplossService'
+import { chartDescriptions } from './PnlChartUtils'
 
 const trades = ref([])
 const totalResponse = ref(null)
-const maePercentage = ref(0)
+
+const maePercentage = ref(6.4)
 const activeTab = ref('slider')
 const isLoading = ref(false)
+
+const currentTotalProfit = ref(0)
 const currentEVperTrade = ref(0)
+const newTotalProfit = ref(0)
 const newEVperTrade = ref(0)
 
-const chartDescriptions = {
-  slider: `With this chart you can
-        test out what stoploss
-        would be ideal in order
-        to minimize losses and
-        maximize wins.`,
-  differentiator: `With this chart you can
-        compare the optimal stoploss PnL with the current stoploss PnL.`,
-  distribution: `With this chart you can
-        analyze the risk of different
-        stoplosses.`
-}
+
+
+
 
 
 
@@ -42,61 +38,64 @@ const handleMaePercentageChange = (newValue) => {
 
 onMounted(async () => {
   isLoading.value = true
-  try {
-    const response = await axios.get('https://us-central1-tradestream-cloud.cloudfunctions.net/stoploss-optimizooor', {
-      params: {
-        uid: 'test_data',
-        session_id: 'session12394',
-      }
-    })
+  const response = await stoplossService.getStoplossData()
+  trades.value = response.data.trades
+  totalResponse.value = response.data
+  isLoading.value = false
 
-    if (response && response.data) {
-      const safeJson = response.data.replace(/\bNaN\b/g, 'null');
-      const parsed = JSON.parse(safeJson);
-      console.log("parsed", parsed)
-      trades.value = (parsed?.data?.trades || []).map((val) => {
-        return {
-          ...val,
-          mae_percent: val?.mae_percent * 100
-        }
-      })
-      totalResponse.value = parsed?.data || null
-      const index = totalResponse.value.ev_by_mae.findIndex(m =>
-        Math.abs(m - parsed?.data?.optimal_stop?.improved_ev) < 0.01
-      );
-      maePercentage.value = totalResponse.value.mae_levels[index] * 100
-      currentEVperTrade.value = totalResponse.value.ev_by_mae[index] / totalResponse.value.trades.length
+  calculateTotalValue()
+})
 
+watch(maePercentage, () => {
+  calculateTotalValue()
+
+})
+
+
+const calculateTotalValue = () => {
+  currentTotalProfit.value = calculateTotalProfit(trades.value)
+  currentEVperTrade.value = calculateProfitPerTrade(trades.value)
+  newTotalProfit.value = calculateTotalProfit(tradesWithStoploss.value)
+  newEVperTrade.value = calculateProfitPerTrade(tradesWithStoploss.value)
+}
+
+
+
+const calculateTotalProfit = (trades) => {
+  return trades.reduce((acc, trade) => acc + trade.pnl_usd, 0)
+}
+
+const calculateProfitPerTrade = (trades) => {
+  return trades.reduce((acc, trade) => acc + trade.pnl_usd, 0) / trades.length
+}
+
+
+
+const tradesWithStoploss = computed(() => {
+  return trades.value.map((trade) => {
+    if (trade.mae_percent <= maePercentage.value / 100) {
+      return trade;
     } else {
-      console.error('Invalid response:', response);
+      const pnl_without_fees = trade.pnl_usd - trade.fees;
+      const new_pnl =
+        Math.abs(pnl_without_fees * (maePercentage.value / 100 / trade.mae_percent)) +
+        trade.fees;
+
+      return {
+        ...trade,
+        pnl_usd: new_pnl,
+      };
     }
-    isLoading.value = false
-  } catch (error) {
-    console.error('Error fetching data:', error)
-    isLoading.value = false
-  }
-})
-
-watch(maePercentage, (newVal) => {
-
-  const maePercentageValue = newVal / 100
-  if (!totalResponse.value?.mae_levels || !totalResponse.value?.ev_by_mae) {
-    return 0;
-  }
-  const index = totalResponse.value.mae_levels.findIndex(m =>
-    Math.abs(m - maePercentageValue) < 0.0001
-  );
-
-  newEVperTrade.value = totalResponse.value.ev_by_mae[index] / totalResponse.value.trades.length
-})
+  });
+});
 
 const retrunColorCodedValue = (number) => {
   if (!number && number !== 0) return '<span class="text-gray-400">$0</span>'
 
   if (number > 0) {
-    return `<span class="text-primary-500 text-3xl">+ $${number.toFixed(2)}</span>`
+    return `<span class="text-primary-500 text-2xl font-semibold"> $${number.toFixed(2)}</span>`
   } else {
-    return `<span class="text-red-500 text-3xl">- $${Math.abs(number).toFixed(2)}</span>`
+    return `<span class="text-red-500 text-2xl font-semibold">- $${Math.abs(number).toFixed(2)}</span>`
   }
 }
 </script>
@@ -109,10 +108,10 @@ const retrunColorCodedValue = (number) => {
       <div :class="[boxClasses.boxClass, 'w-full']">
         <div class="h-[60vh]">
           <div v-if="activeTab === 'slider'">
-            <PnlSliderChart :trades="trades" v-model:maePercentage="maePercentage" :isCumulativeView="false" />
+            <PnlSliderChart :trades="trades" v-model:maePercentage="maePercentage"  />
           </div>
           <div v-if="activeTab === 'differentiator'">
-            <PnlDifferentiatorChart :trades="trades" v-model:maePercentage="maePercentage" />
+            <PnlDifferentiatorChart :trades="trades" v-model:maePercentage="maePercentage" :currentTotalProfit="currentTotalProfit" :newTotalProfit="newTotalProfit" />
           </div>
           <div v-if="activeTab === 'distribution'">
             <PnlWinRateChart :response="totalResponse" v-model:maePercentage="maePercentage" />
@@ -153,30 +152,48 @@ const retrunColorCodedValue = (number) => {
 
       </div>
     </div>
-    <div :class="[boxClasses.boxClass, 'w-[300px] h-fit flex flex-col gap-4']">
+    <div :class="[boxClasses.boxClass, 'max-w-[400px] h-fit flex flex-col gap-4']">
       <h3 class=" text-lg font-semibold ">Insights</h3>
-      <Transition
-        mode="out-in"
-        enter-from-class="opacity-0 translate-y-1"
-        enter-to-class="opacity-100 translate-y-0"
-        enter-active-class="transition-all duration-300 ease-in"
-        leave-from-class="opacity-100 translate-y-0"
-        leave-to-class="opacity-0 -translate-y-1"
-        leave-active-class="transition-all duration-300 ease-out"
-      >
+      <Transition mode="out-in" enter-from-class="opacity-0 translate-y-1" enter-to-class="opacity-100 translate-y-0"
+        enter-active-class="transition-all duration-300 ease-in" leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 -translate-y-1" leave-active-class="transition-all duration-300 ease-out">
         <p class="text-gray-400 text-sm mb-[10px] min-h-[60px]" :key="activeTab">
           {{ chartDescriptions[activeTab] }}
         </p>
       </Transition>
       <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
-        <h3 class="text-gray-400 text-sm mb-[10px]">Current Expected Value per trade</h3>
-        <h3 class="text-white-800 text-lg font-semibold mb-[16px]" v-html="retrunColorCodedValue(currentEVperTrade)" />
+        <h3 class="text-white-800 text-md mb-[10px] font-semibold">Current Expected Values</h3>
+        <div class="flex justify-between">
+          <div>
+            <h3 class="text-gray-400 text-sm mb-[10px]">Profit per trade</h3>
+            <h3 class=" " v-html="retrunColorCodedValue(currentEVperTrade)" />
+          </div>
+          <div>
+            <h3 class="text-gray-400 text-sm mb-[10px]">Total Profit</h3>
+            <h3 class="" v-html="retrunColorCodedValue(currentTotalProfit)" />
+          </div>
+          <div>
+
+          </div>
+        </div>
       </div>
       <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
-        <h3 class="text-gray-400 text-sm mb-[10px]">Expected Value after
+        <h3 class="text-white-800 text-md mb-[10px] font-semibold">Expected Value after
           implementing new
           stoploss:</h3>
-        <h3 class="text-white-800 text-lg font-semibold mb-[16px]" v-html="retrunColorCodedValue(newEVperTrade)" />
+        <div class="flex justify-between">
+          <div>
+            <h3 class="text-gray-400 text-sm mb-[10px]">Profit per trade</h3>
+            <h3 class=" " v-html="retrunColorCodedValue(newEVperTrade)" />
+          </div>
+          <div>
+            <h3 class="text-gray-400 text-sm mb-[10px]">Total Profit</h3>
+            <h3 class="" v-html="retrunColorCodedValue(newTotalProfit)" />
+          </div>
+          <div>
+
+          </div>
+        </div>
       </div>
       <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
         <h3 class="text-gray-400 text-sm mb-[10px]">Stoploss Distance (%) :</h3>
