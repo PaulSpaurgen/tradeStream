@@ -274,11 +274,6 @@ const updateAnnotationToFullHeight = (xValue) => {
     }
   }
 }
-
-
-
-
-
 const isYaxisPercentage = ref(false)
 const isUpdatingFromAnnotation = ref(false)
 

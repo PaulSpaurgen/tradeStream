@@ -62,10 +62,10 @@ onMounted(async () => {
       })
       totalResponse.value = parsed?.data || null
       const index = totalResponse.value.ev_by_mae.findIndex(m =>
-        Math.abs(m - parsed?.data?.optimal_stop?.improved_ev) < 0.01
+        Math.abs(m - parsed?.data?.optimal_stop?.improved_ev) < 0.001
       );
       maePercentage.value = totalResponse.value.mae_levels[index] * 100
-      currentEVperTrade.value = totalResponse.value.ev_by_mae[index] / totalResponse.value.trades.length
+      currentEVperTrade.value = totalResponse.value.ev_by_mae[index] 
 
     } else {
       console.error('Invalid response:', response);
@@ -83,20 +83,21 @@ watch(maePercentage, (newVal) => {
   if (!totalResponse.value?.mae_levels || !totalResponse.value?.ev_by_mae) {
     return 0;
   }
+  console.log("maePercentageValue", maePercentageValue, totalResponse.value.mae_levels)
   const index = totalResponse.value.mae_levels.findIndex(m =>
-    Math.abs(m - maePercentageValue) < 0.0001
+    Math.abs(m - maePercentageValue) < 0.001
   );
 
-  newEVperTrade.value = totalResponse.value.ev_by_mae[index] / totalResponse.value.trades.length
+  newEVperTrade.value = totalResponse.value.ev_by_mae[index] 
 })
 
 const retrunColorCodedValue = (number) => {
   if (!number && number !== 0) return '<span class="text-gray-400">$0</span>'
 
   if (number > 0) {
-    return `<span class="text-primary-500 text-3xl">+ $${number.toFixed(2)}</span>`
+    return `<span class="text-primary-500 text-xl"> $${number.toFixed(2)}</span>`
   } else {
-    return `<span class="text-red-500 text-3xl">- $${Math.abs(number).toFixed(2)}</span>`
+    return `<span class="text-red-500 text-xl">- $${Math.abs(number).toFixed(2)}</span>`
   }
 }
 </script>
@@ -153,7 +154,7 @@ const retrunColorCodedValue = (number) => {
 
       </div>
     </div>
-    <div :class="[boxClasses.boxClass, 'w-[300px] h-fit flex flex-col gap-4']">
+    <div :class="[boxClasses.boxClass, 'max-w-[400px] h-fit flex flex-col gap-4']">
       <h3 class=" text-lg font-semibold ">Insights</h3>
       <Transition
         mode="out-in"
@@ -169,8 +170,9 @@ const retrunColorCodedValue = (number) => {
         </p>
       </Transition>
       <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
-        <h3 class="text-gray-400 text-sm mb-[10px]">Current Expected Value per trade</h3>
-        <h3 class="text-white-800 text-lg font-semibold mb-[16px]" v-html="retrunColorCodedValue(currentEVperTrade)" />
+        <h3 class="text-gray-400 text-md mb-[10px]">Current </h3>
+
+        <h3 class=" mb-[16px]" v-html="retrunColorCodedValue(currentEVperTrade)" />
       </div>
       <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
         <h3 class="text-gray-400 text-sm mb-[10px]">Expected Value after

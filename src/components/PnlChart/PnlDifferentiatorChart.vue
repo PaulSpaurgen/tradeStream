@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { formatLargeNumber } from './PnlChartUtils'
 
 const props = defineProps({
@@ -10,6 +10,7 @@ const props = defineProps({
     },
     maePercentage: {
         type: Number,
+        required: true,
         default: 0
     },
     isCumulativeView: {
@@ -18,7 +19,30 @@ const props = defineProps({
     }
 })
 
-const chartOptions = ref({
+const cumilativeReturnCalculator = (trades, withMae) => {
+    let cumulativeProfit = 0;
+    return trades.map((trade) => {
+        let pnlValue = trade.pnl_usd;
+        
+        if (withMae && trade.mae_percent > props.maePercentage) {
+            const pnl_without_fees = trade.pnl_usd - trade.fees;
+            pnlValue = (Math.abs(pnl_without_fees) * (props.maePercentage / trade.mae_percent)) + trade.fees;
+        }
+        
+        cumulativeProfit += pnlValue;
+        return [trade.timestamp, cumulativeProfit];
+    });
+};
+
+const actualReturns = computed(() => {
+    return cumilativeReturnCalculator(props.trades, false);
+});
+
+const optimizedReturns = computed(() => {
+    return cumilativeReturnCalculator(props.trades, true);
+});
+
+const chartOptions = computed(() => ({
     height: 400,
     chart: {
         type: 'line',
@@ -54,7 +78,7 @@ const chartOptions = ref({
             });
 
             // Find the points by series name since indices might change
-            const optimizedPoint = this.points.find(p => p.series.name === 'Current Optimized P&L');
+            const optimizedPoint = this.points.find(p => p.series.name === 'Current P&L');
             const projectedPoint = this.points.find(p => p.series.name === 'Expected P&L');
 
             const optimizedPnL = optimizedPoint?.y?.toFixed(2) || '0.00';
@@ -78,7 +102,7 @@ const chartOptions = ref({
         }
     },
     xAxis: {
-        type: 'linear',
+        type: 'datetime',
         tickAmount: 10,
         title: null,
         gridLineWidth: 0,
@@ -98,140 +122,112 @@ const chartOptions = ref({
         gridLineColor: '#404040',
         gridLineDashStyle: 'Dash',
         lineWidth: 0,
-        title: null,
+        title: {
+            text: null
+        },
         labels: {
-
             style: {
                 color: '#676768',
             },
             formatter: function () {
                 return '$' + formatLargeNumber(this.value);
             }
-        },
+        }
     },
-    series: []
-})
-
-
-
-
-
-const updateChartConfigData = () => {
-    // Create data pairs for both percentage and USD series
-    const xRange = {
-        min: Number.MAX_SAFE_INTEGER,
-        max: Number.MIN_SAFE_INTEGER
-    }
-    const usdDataWithMae = props.trades.map((val) => {
-        let usdValue = val?.pnl_usd
-        if (val?.mae_percent > props.maePercentage) {
-            const pnl_without_fees = val?.pnl_usd - val?.fees
-            const updated_pnl = (Math.abs(pnl_without_fees) * (props.maePercentage / val?.mae_percent)) + val?.fees
-            usdValue = updated_pnl
-        }
-        return [val?.timestamp, usdValue]
-    })
-    const usdDataWithoutMae = props.trades.map((val) => {
-        if (val?.timestamp) {
-            xRange.min = Math.min(xRange.min, val.timestamp);
-            xRange.max = Math.max(xRange.max, val.timestamp);
-        }
-        return [val?.timestamp, val?.pnl_usd]
-    })
-
-
-    chartOptions.value = {
-        ...chartOptions.value,
-        xAxis: {
-            ...chartOptions.value.xAxis,
-            type: 'datetime',
-            min: xRange.min,
-            max: xRange.max
-        },
-        series: [
-            {
-                name: 'Range Area',
-                type: 'arearange',
-                data: usdDataWithoutMae.map((point, index) => {
-                    const diff = usdDataWithMae[index][1] - point[1];
-                    return {
-                        x: point[0],
-                        low: Math.min(point[1], usdDataWithMae[index][1]),
-                        high: Math.max(point[1], usdDataWithMae[index][1]),
-                        isNegative: diff < 0
-                    }
-                }),
-                fillOpacity: 1,
-                enableMouseTracking: true,
-                showInLegend: false,
-                color: {
-                    linearGradient: {
-                        x1: 0,
-                        y1: 0,
-                        x2: 0,
-                        y2: 1
-                    },
-                    stops: [
-                        [0, 'rgba(101, 196, 157, 0.4)'],    // Start with higher opacity
-                        [0.4, 'rgba(101, 196, 157, 0.2)'],  // Middle point
-                        [0.8, 'rgba(101, 196, 157, 0.1)'],  // Fade more gradually
-                        [1, 'rgba(101, 196, 157, 0)']       // Fully transparent at bottom
-                    ]
-                },
-                negativeColor: {
-                    linearGradient: {
-                        x1: 0,
-                        y1: 0,
-                        x2: 0,
-                        y2: 1
-                    },
-                    stops: [
-                        [0, 'rgba(222, 87, 111, 0.4)'],     // Start with higher opacity
-                        [0.4, 'rgba(222, 87, 111, 0.2)'],   // Middle point
-                        [0.8, 'rgba(222, 87, 111, 0.1)'],   // Fade more gradually
-                        [1, 'rgba(222, 87, 111, 0)']        // Fully transparent at bottom
-                    ]
-                },
-                lineWidth: 0,
-                zIndex: -1
-            },
-            {
-                name: 'Current Optimized P&L',
-                data: usdDataWithoutMae,
-                color: '#5F93F5',
-                lineWidth: 2,
-                marker: {
-                    symbol: 'circle',
-                    enabled: false
-
-                }
-            },
-            {
-                name: 'Expected P&L',
-                data: usdDataWithMae,
-                color: '#65C49D',
-                lineWidth: 2,
-                marker: {
-                    symbol: 'circle',
-                    enabled: false
-                }
+    plotOptions: {
+        series: {
+            marker: {
+                enabled: false
             }
-        ]
+        }
+    },
+    series: [
+        {
+            name: 'Range Area',
+            type: 'arearange',
+            data: actualReturns.value.map((point, index) => {
+                const optimizedPoint = optimizedReturns.value[index];
+                const diff = optimizedPoint[1] - point[1];
+                return {
+                    x: point[0],
+                    low: Math.min(point[1], optimizedPoint[1]),
+                    high: Math.max(point[1], optimizedPoint[1]),
+                    isNegative: diff < 0
+                };
+            }),
+            fillOpacity: 1,
+            enableMouseTracking: true,
+            showInLegend: false,
+            color: {
+                linearGradient: {
+                    x1: 0,
+                    y1: 0,
+                    x2: 0,
+                    y2: 1
+                },
+                stops: [
+                    [0, 'rgba(101, 196, 157, 0.4)'],    // Start with higher opacity
+                    [0.4, 'rgba(101, 196, 157, 0.2)'],  // Middle point
+                    [0.8, 'rgba(101, 196, 157, 0.1)'],  // Fade more gradually
+                    [1, 'rgba(101, 196, 157, 0)']       // Fully transparent at bottom
+                ]
+            },
+            negativeColor: {
+                linearGradient: {
+                    x1: 0,
+                    y1: 0,
+                    x2: 0,
+                    y2: 1
+                },
+                stops: [
+                    [0, 'rgba(222, 87, 111, 0.4)'],     // Start with higher opacity
+                    [0.4, 'rgba(222, 87, 111, 0.2)'],   // Middle point
+                    [0.8, 'rgba(222, 87, 111, 0.1)'],   // Fade more gradually
+                    [1, 'rgba(222, 87, 111, 0)']        // Fully transparent at bottom
+                ]
+            },
+            lineWidth: 0,
+            zIndex: -1
+        },
+        {
+            name: 'Current P&L',
+            data: actualReturns.value,
+            color: '#5F93F5',
+            lineWidth: 2,
+            marker: {
+                symbol: 'circle',
+                enabled: false
+            }
+        },
+        {
+            name: 'Expected P&L',
+            data: optimizedReturns.value,
+            color: '#65C49D',
+            lineWidth: 2,
+            marker: {
+                symbol: 'circle',
+                enabled: false
+            }
+        }
+    ],
+    credits: {
+        enabled: false
     }
-}
+}));
+
 // Watch for changes in trades prop
 watch(() => props.trades, (newTrades) => {
     if (newTrades && newTrades.length > 0) {
-        updateChartConfigData()
+        // Chart will automatically update through computed properties
     }
-}, { immediate: true })
+}, { immediate: true });
 
 // Watch for changes in maePercentage
 watch(() => props.maePercentage, () => {
     if (typeof props.maePercentage === 'number') {
-        updateChartConfigData()
+        // Chart will automatically update through computed properties
     }
-}, { immediate: false })
+}, { immediate: false });
 </script>
 
 <template>
