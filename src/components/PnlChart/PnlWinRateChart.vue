@@ -135,7 +135,6 @@ const findYValueAtMAE = (maeValue) => {
 }
 
 const updateChartConfigData = () => {
-    console.log('Updating chart with maePercentage:', props.maePercentage)
     
     // Create data pairs for both percentage and USD series
     const xRange = {
@@ -145,8 +144,6 @@ const updateChartConfigData = () => {
     const evYaxisData = props.response?.ev_by_mae
     const winRateYaxisData = props.response?.recovery_rate_by_mae
 
-    console.log('EV Data:', evYaxisData)
-    console.log('Win Rate Data:', winRateYaxisData)
 
     const chartData = props.response?.mae_levels?.map((val, i) => {
         xRange.min = Math.min(xRange.min, val)

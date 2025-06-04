@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Chart from '../components/PnlChart/Chart.vue'
-import NewChart from '../components/PnlChart/NewChart.vue'
 
 const routes = [
   {
@@ -8,11 +7,6 @@ const routes = [
     name: 'home',
     component: Chart
   },
-  {
-    path: '/dashboard',
-    name: 'dashboard',
-    component: NewChart
-  }
 ]
 
 const router = createRouter({
