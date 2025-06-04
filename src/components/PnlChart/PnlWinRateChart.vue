@@ -41,7 +41,7 @@ const chartOptions = ref({
             fontSize: '12px'
         },
         itemHoverStyle: {
-            color: '#ffffff'
+            color: '#FCFEFD'
         }
     },
     tooltip: {
@@ -95,7 +95,7 @@ const chartOptions = ref({
             formatter: function () {
                 return isValueByExpectedValue.value
                     ? '$' + formatLargeNumber(this.value)
-                    : (this.value * 100).toFixed(1) + '%';
+                    : (this.value * 100).toFixed(0) + '%';
             }
         },
     },

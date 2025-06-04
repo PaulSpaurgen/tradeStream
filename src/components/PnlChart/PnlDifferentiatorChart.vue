@@ -72,7 +72,7 @@ const chartOptions = computed(() => ({
             fontSize: '12px'
         },
         itemHoverStyle: {
-            color: '#ffffff'
+            color: '#FCFEFD'
         }
     },
     tooltip: {

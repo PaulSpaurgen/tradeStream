@@ -7,7 +7,7 @@ export const formatLargeNumber = (value) => {
     } else if (absValue >= 1000000) {
       formattedValue = (value / 1000000).toFixed(0) + 'M'
     } else if (absValue >= 1000) {
-      formattedValue = (value / 1000).toFixed(0) + 'K'
+      formattedValue = value % 1000 === 0 ? (value / 1000).toFixed(0) + 'K' : (value / 1000).toFixed(1) + 'K'
     } else {
       formattedValue = value.toFixed(0)
     }

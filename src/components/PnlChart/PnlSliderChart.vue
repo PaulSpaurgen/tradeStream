@@ -39,7 +39,7 @@ const chartOptions = ref({
       color: '#676768'
     },
     itemHoverStyle: {
-      color: '#9CA3AF'
+      color: '#FCFEFD'
     },
   },
   title: {
