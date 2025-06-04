@@ -48,12 +48,13 @@ const chartOptions = ref({
 
       const seriesColor = this.series.color;
       const seriesName = this.series.name;
+      const isLosing = this.series.name === 'Losing Trades'
       this.borderColor = seriesColor;
 
       return `
         <div style="text-align: left; font-family: Averta;">
           <div style="font-size: 12px; font-weight: bold; color:${seriesColor}; margin-bottom: 4px;">${seriesName}</div>
-          <div><strong>PnL:</strong> ${pnlValue}</div>
+          <div><strong>PnL:</strong> ${isLosing ? '-' : ''} ${pnlValue}</div>
           <div><strong>MAE:</strong> ${maeValue}</div>
         </div>
       `;
@@ -65,20 +66,18 @@ const chartOptions = ref({
     tickAmount: 10,
     title: null,
     gridLineWidth: 0,
-    gridLineColor: '#404040',
-    gridLineDashStyle: 'Dash',
     lineWidth: 0,
     tickWidth: 0,
     labels: {
       style: {
         color: '#676768',
+        fontSize: '12px'
       }
-    }
+    },
+    maxPadding: 0.1
   },
   yAxis: {
     gridLineWidth: 0,
-    gridLineColor: '#404040',
-    gridLineDashStyle: 'Dash',
     lineWidth: 0,
     title: {
       text: null
@@ -86,6 +85,7 @@ const chartOptions = ref({
     labels: {
       style: {
         color: '#676768',
+        fontSize: '12px'
       },
       formatter: function () {
         if (isYaxisPercentage.value) {
@@ -105,20 +105,32 @@ const updateChartConfigData = () => {
     max: Number.MIN_SAFE_INTEGER
   }
   const trades = props.trades
-  const dataPairs = trades.map((value, i) => {
+  const winningTrades = []
+  const losingTrades = []
+
+  trades.forEach((value, i) => {
     if (value?.mae_percent && value?.pnl_percent) {
       xRange.min = Math.min(xRange.min, value.mae_percent * 100);
       xRange.max = Math.max(xRange.max, value.mae_percent * 100);
     }
-    return isYaxisPercentage.value ? [value.mae_percent * 100, value.pnl_percent] : [value.mae_percent * 100, value.pnl_usd]
+
+    const yValue = isYaxisPercentage.value ? value.pnl_percent : value.pnl_usd;
+    const absYValue = Math.abs(yValue);
+
+    if (value?.pnl_percent > 0) {
+      winningTrades.push([value.mae_percent * 100, absYValue])
+    } else {
+      losingTrades.push([value.mae_percent * 100, absYValue])
+    }
   });
 
-  const losingTrades = dataPairs.filter(trade => trade[1] < 0)
-  const winningTrades = dataPairs.filter(trade => trade[1] > 0)
+  const xPadding = (xRange.max - xRange.min) * 0.1;
+  xRange.max = xRange.max + xPadding;
 
   chartOptions.value = {
     ...chartOptions.value,
     xAxis: {
+      ...chartOptions.value.xAxis,
       min: xRange.min,
       max: xRange.max
     },
