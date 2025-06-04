@@ -130,6 +130,8 @@ const findYValueAtMAE = (maeValue) => {
         : props.response?.recovery_rate_by_mae;
 
     const yValue = yData ? yData[closestIndex] : null;
+
+    console.log({ yValue })
     
     return yValue;
 }
@@ -141,27 +143,38 @@ const updateChartConfigData = () => {
         min: Number.MAX_SAFE_INTEGER,
         max: Number.MIN_SAFE_INTEGER
     }
+    const yRange = {
+        min: Number.MAX_SAFE_INTEGER,
+        max: Number.MIN_SAFE_INTEGER
+    }
     const evYaxisData = props.response?.ev_by_mae
     const winRateYaxisData = props.response?.recovery_rate_by_mae
 
+    const yAxisData = isValueByExpectedValue.value ? evYaxisData : winRateYaxisData
+
 
     const chartData = props.response?.mae_levels?.map((val, i) => {
+        yRange.min = Math.min(yRange.min, yAxisData[i] || 0)
+        yRange.max = Math.max(yRange.max, yAxisData[i] || 0)
         xRange.min = Math.min(xRange.min, val)
         xRange.max = Math.max(xRange.max, val)
-        return isValueByExpectedValue.value 
-            ? [val , evYaxisData[i] || 0] 
-            : [val, (winRateYaxisData[i] || 0)];
+        return [val, yAxisData[i] || 0]
     })
 
     const yValue = findYValueAtMAE(props.maePercentage);
 
     chartOptions.value = {
         ...chartOptions.value,
+        yAxis: {
+            ...chartOptions.value.yAxis,
+            min: yRange.min,
+            max: yRange.max
+        },
         xAxis: {
             ...chartOptions.value.xAxis,
             type: 'linear',
             min: xRange.min,
-            max: xRange.max
+            max:  xRange.max
         },
         annotations: [{
             visible: true,

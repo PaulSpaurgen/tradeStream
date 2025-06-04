@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import { tabGroupClasses, boxClasses } from './commonCssClasses'
 import { formatLargeNumber } from './PnlChartUtils'
 import Info from '../../atoms/Info.vue'
@@ -40,7 +40,7 @@ const chartOptions = ref({
     },
     itemHoverStyle: {
       color: '#9CA3AF'
-    }
+    },
   },
   title: {
     text: null
@@ -81,7 +81,7 @@ const chartOptions = ref({
     labels: {
       style: {
         color: '#676768',
-        fontSize: '12px'
+        fontSize: '12px',
       }
     },
     formatter: function () {
@@ -115,7 +115,6 @@ const returnPointRadius = (pointValue, maxValue) => {
   const maxRadius = 10
   const minRadius = 2
   const percentage = pointValue / maxValue
-  console.log({ percentage, radius: Math.round(minRadius + (maxRadius - minRadius) * percentage) })
   return Math.round(minRadius + (maxRadius - minRadius) * percentage)
 }
 
@@ -158,14 +157,15 @@ const updateChartConfigData = () => {
     series: [{
       name: 'Winning Trades',
       color: '#4C9077',
+      symbol: 'circle',
       data: winningTrades.map((value, i) => {
         return {
           x: value[0],
           y: value[1],
           marker: {
             radius: returnPointRadius(value[1], maxValue),
-            fillColor: '#262627',
-            lineColor: '#4C9077',
+            fillColor: 'transparent',
+            lineColor: '#65C49D',
             lineWidth: 2,
             symbol: 'circle',
           }
@@ -173,16 +173,17 @@ const updateChartConfigData = () => {
       }),
     }, {
       name: 'Losing Trades',
-      color: '#B4465A',
+      color: '#DE576F',
+      shape: 'circle',
+      symbol: 'circle',
       data: losingTrades.map((value, i) => {
         return {
           x: value[0],
           y: value[1],
-          color: '#B4465A',
           marker: {
             radius: returnPointRadius(value[1], maxValue),
-            fillColor: '#262627',
-            lineColor: '#B4465A',
+            fillColor: 'transparent',
+            lineColor: '#DE576F',
             lineWidth: 2,
             symbol: 'circle',
           }

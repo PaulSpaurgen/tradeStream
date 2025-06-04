@@ -6,6 +6,7 @@ import PnlDifferentiatorChart from './PnlDifferentiatorChart.vue'
 import PnlWinRateChart from './PnlWinRateChart.vue'
 import { tabGroupClasses, buttonClasses, boxClasses } from './commonCssClasses'
 import { stoplossService } from '../../services/stoplossService'
+import { formatLargeNumber } from './PnlChartUtils'
 import { chartDescriptions } from './PnlChartUtils'
 
 const trades = ref([])
@@ -87,9 +88,9 @@ const retrunColorCodedValue = (number) => {
     if (!number && number !== 0) return '<span class="text-gray-400">$0</span>'
 
     if (number > 0) {
-        return `<span class="text-primary-500 text-2xl font-semibold"> $${number.toFixed(2)}</span>`
+        return `<span class="text-primary-500 text-2xl font-semibold"> $${formatLargeNumber(number)}</span>`
     } else {
-        return `<span class="text-red-500 text-2xl font-semibold">- $${Math.abs(number).toFixed(2)}</span>`
+        return `<span class="text-red-500 text-2xl font-semibold">- $${formatLargeNumber(Math.abs(number))}</span>`
     }
 }
 </script>
@@ -167,7 +168,6 @@ const retrunColorCodedValue = (number) => {
             </div>
             <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
                 <h3 class="text-gray-400 text-sm mb-[10px]">Stoploss Distance (%) :</h3>
-                <!-- <h3 class="text-white-800 text-lg font-semibold mb-[16px]">asdasdsad</h3> -->
                 <Input label="" type="number" inputClass="w-[150px] text-3xl font-semibold" :modelValue="maePercentage"
                     @update:modelValue="handleMaePercentageChange" />
             </div>

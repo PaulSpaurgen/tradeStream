@@ -29,7 +29,10 @@ const props = defineProps({
 
 const cumilativeReturnCalculator = (trades, withMae) => {
     let cumulativeProfit = 0;
-    return trades.map((trade) => {
+    // First sort trades by timestamp
+    const sortedTrades = [...trades].sort((a, b) => a.timestamp - b.timestamp);
+    
+    return sortedTrades.map((trade) => {
         let pnlValue = trade.pnl_usd;
         const maePercentage = props.maePercentage / 100
         
