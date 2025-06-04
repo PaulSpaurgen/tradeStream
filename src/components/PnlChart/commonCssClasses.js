@@ -13,3 +13,31 @@ export const boxClasses = {
   boxClass: "p-[24px] bg-gray-900 rounded-[6px] border-[1px] border-gray-850",
   smallBoxClass: "p-[10px] bg-gray-900 rounded-[6px] border-[1px] border-gray-850"
 }
+
+export const sliderStyle = {
+  fill: 'none',
+  stroke: '#65C49D',
+  dashStyle: '',
+  strokeWidth: 4,
+  type: 'path',
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round'
+
+}
+export const labelStyle = {
+  backgroundColor: '#4C9077',
+  borderColor: '#65C49D',
+  fontFamily: 'Averta',
+  borderWidth: 1,
+  borderRadius: 2,
+  style: {
+    color: '#ffffff',
+    fontSize: '12px',
+    fontWeight: 'bold'
+  },
+  y: -5,
+  align: 'center',
+  verticalAlign: 'bottom',
+  distance: 0,
+  shape: 'rect'
+}

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
-import { tabGroupClasses, boxClasses } from './commonCssClasses'
+import { tabGroupClasses, boxClasses, sliderStyle, labelStyle } from './commonCssClasses'
 import { formatLargeNumber } from './PnlChartUtils'
 import Info from '../../atoms/Info.vue'
 import { chartDescriptions } from './PnlChartUtils'
@@ -17,14 +17,28 @@ const props = defineProps({
   },
   maePercentage: {
     type: Number,
-    default: 0
+    required: true,
+    default: 6.4,
+    validator: (value) => !isNaN(value)
+  },
+  maeRange: {
+    type: Object,
+    required: true,
+    default: () => ({
+      min: Number.MAX_SAFE_INTEGER,
+      max: Number.MIN_SAFE_INTEGER
+    })
   }
 })
+
+const emit = defineEmits(['update:maePercentage'])
 
 const chartRef = ref(null)
 let resizeObserver = null
 
 const isYaxisPercentage = ref(false)
+
+
 
 const chartOptions = ref({
   credits: {
@@ -35,12 +49,7 @@ const chartOptions = ref({
     backgroundColor: '#262627'
   },
   legend: {
-    itemStyle: {
-      color: '#676768'
-    },
-    itemHoverStyle: {
-      color: '#FCFEFD'
-    },
+    enabled: false
   },
   title: {
     text: null
@@ -118,24 +127,23 @@ const returnPointRadius = (pointValue, maxValue) => {
 }
 
 const updateChartConfigData = () => {
-  const xRange = {
-    min: Number.MAX_SAFE_INTEGER,
-    max: Number.MIN_SAFE_INTEGER
-  }
+
   const trades = props.trades
   let maxValue = 0
   const winningTrades = []
   const losingTrades = []
 
-  trades.forEach((value, i) => {
-    if (value?.mae_percent && value?.pnl_percent) {
-      xRange.min = Math.min(xRange.min, value.mae_percent * 100);
-      xRange.max = Math.max(xRange.max, value.mae_percent * 100);
-    }
+  const yRange = {
+    min: Number.MAX_SAFE_INTEGER,
+    max: Number.MIN_SAFE_INTEGER
+  }
 
+  trades.forEach((value, i) => {
     const yValue = isYaxisPercentage.value ? value.pnl_percent : value.pnl_usd;
     const absYValue = Math.abs(yValue);
     maxValue = Math.max(maxValue, absYValue)
+    yRange.min = Math.min(yRange.min, yValue)
+    yRange.max = Math.max(yRange.max, yValue)
     if (value?.pnl_percent > 0) {
       winningTrades.push([value.mae_percent * 100, absYValue])
     } else {
@@ -143,16 +151,55 @@ const updateChartConfigData = () => {
     }
   });
 
-  const xPadding = (xRange.max - xRange.min) * 0.1;
-  xRange.max = xRange.max + xPadding;
-
   chartOptions.value = {
     ...chartOptions.value,
     xAxis: {
       ...chartOptions.value.xAxis,
-      min: xRange.min,
-      max: xRange.max
+      min: props.maeRange.min,
+      max: props.maeRange.max
     },
+    annotations: [{
+      draggable: "x",
+      events: {
+        drag: function(e) {
+          const newX = Number(this.shapes[0].points[0].x.toFixed(4));
+          const boundedX = Math.min(Math.max(newX, props.maeRange.min), props.maeRange.max);
+          console.log('Dragging - Current value:', boundedX);
+          emit('update:maePercentage', boundedX.toFixed(2));
+          
+          if (this.labels && this.labels[0]) {
+            this.labels[0].update({
+              text: `MAE: ${boundedX.toFixed(2)}%`
+            }, false);
+          }
+        }
+      },
+      shapes: [{
+        ...sliderStyle,
+        zIndex: 1000,
+        points: [{
+          x: props.maePercentage,
+          y: yRange.min,
+          xAxis: 0,
+          yAxis: 0
+        }, {
+          x: props.maePercentage,
+          y: yRange.max,
+          xAxis: 0,
+          yAxis: 0
+        }]
+      }],
+      labels: [{
+        point: {
+          x: props.maePercentage,
+          y: yRange.max,
+          xAxis: 0,
+          yAxis: 0
+        },
+        text: `MAE: ${props.maePercentage.toFixed(2)}%`,
+        ...labelStyle
+      }]
+    }],
     series: [{
       name: 'Winning Trades',
       color: '#4C9077',
@@ -264,13 +311,34 @@ onUnmounted(() => {
         </button>
       </div>
     </div>
-
     <highcharts ref="chartRef" :options="chartOptions" id="high-sky-high"></highcharts>
-
-    <div class="flex w-full justify-center items-center mt-4 gap-2">
+    <div class="flex w-full justify-center items-center mt-2 gap-2">
       <div class="text-white-800 text-sm">MAE (%)</div>
       <Info title="MAE"
         description="MAE is the average of the absolute difference between the actual stoploss and the optimal stoploss." />
     </div>
   </div>
 </template>
+
+<style scoped>
+.custom-slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1rem;
+  height: 6rem;
+  background: #6d6d6e;
+  border: 2px solid #fcfefd;
+  border-radius: 1rem;
+  cursor: grab;
+}
+
+/* Firefox */
+.custom-slider-thumb::-moz-range-thumb {
+  width: 1rem;
+  height: 6rem;
+  border-radius: 1rem;
+  cursor: grab;
+  background: #6d6d6e;
+  border: 2px solid #fcfefd;
+}
+</style>

@@ -4,7 +4,7 @@ import Input from '../../atoms/Inputs/Input.vue'
 import PnlSliderChart from './PnlSliderChart.vue'
 import PnlDifferentiatorChart from './PnlDifferentiatorChart.vue'
 import PnlWinRateChart from './PnlWinRateChart.vue'
-import { tabGroupClasses, buttonClasses, boxClasses } from './commonCssClasses'
+import { boxClasses } from './commonCssClasses'
 import { stoplossService } from '../../services/stoplossService'
 import { formatLargeNumber } from './PnlChartUtils'
 import { chartDescriptions } from './PnlChartUtils'
@@ -16,20 +16,35 @@ const maePercentage = ref(6.4)
 const activeTab = ref('slider')
 const isLoading = ref(false)
 
-const currentTotalProfit = ref(0)
-const currentEVperTrade = ref(0)
-const newTotalProfit = ref(0)
-const newEVperTrade = ref(0)
+const currentTotalProfit = computed(() => calculateTotalProfit(trades.value))
+const currentEVperTrade = computed(() => calculateProfitPerTrade(trades.value))
+const newTotalProfit = computed(() => calculateTotalProfit(tradesWithStoploss.value))
+const newEVperTrade = computed(() => calculateProfitPerTrade(tradesWithStoploss.value))
 
-const handleMaePercentageChange = (newValue) => {
-    console.log('MAE Percentage changed:', newValue)
-    const numericValue = typeof newValue === 'string' ? parseFloat(newValue) : newValue
-    if (isNaN(numericValue) || numericValue < 0) {
-        console.warn('Invalid MAE percentage value:', newValue)
-        return
+const maeRange = ref({
+    min: Number.MAX_SAFE_INTEGER,
+    max: Number.MIN_SAFE_INTEGER
+})
+
+const maeRangeValues = computed(() => {
+    const range = {
+        min: Number.MAX_SAFE_INTEGER,
+        max: Number.MIN_SAFE_INTEGER
     }
-    maePercentage.value = numericValue
-}
+    
+    trades.value?.forEach(trade => {
+        const maePercent = trade.mae_percent * 100
+        range.min = Math.min(range.min, maePercent)
+        range.max = Math.max(range.max, maePercent)
+    })
+    
+    return range
+})
+
+watch(maeRangeValues, (newRange) => {
+    maeRange.value = newRange
+}, { immediate: true })
+
 
 onMounted(async () => {
     isLoading.value = true
@@ -37,34 +52,19 @@ onMounted(async () => {
     trades.value = response.data.trades
     totalResponse.value = response.data
     isLoading.value = false
-    console.log({ response })
-    calculateTotalValue()
 })
 
 watch(maePercentage, () => {
-    calculateTotalValue()
-
+    // The computed properties will automatically update when maePercentage changes
 })
-
-
-const calculateTotalValue = () => {
-    currentTotalProfit.value = calculateTotalProfit(trades.value)
-    currentEVperTrade.value = calculateProfitPerTrade(trades.value)
-    newTotalProfit.value = calculateTotalProfit(tradesWithStoploss.value)
-    newEVperTrade.value = calculateProfitPerTrade(tradesWithStoploss.value)
-}
-
-
 
 const calculateTotalProfit = (trades) => {
     return trades.reduce((acc, trade) => acc + trade.pnl_usd, 0)
 }
 
 const calculateProfitPerTrade = (trades) => {
-    return trades.reduce((acc, trade) => acc + trade.pnl_usd, 0) / trades.length
+    return trades.length ? trades.reduce((acc, trade) => acc + trade.pnl_usd, 0) / trades.length : 0
 }
-
-
 
 const tradesWithStoploss = computed(() => {
     return trades.value.map((trade) => {
@@ -101,7 +101,7 @@ const retrunColorCodedValue = (number) => {
         <div class="flex-grow">
             <div :class="[boxClasses.boxClass, 'w-full mb-[20px] h-fit']">
                 <div>
-                    <PnlSliderChart :trades="trades" v-model:maePercentage="maePercentage" />
+                    <PnlSliderChart :trades="trades" v-model:maePercentage="maePercentage" :maeRange="maeRange" />
 
                 </div>
             </div>
@@ -168,8 +168,8 @@ const retrunColorCodedValue = (number) => {
             </div>
             <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
                 <h3 class="text-gray-400 text-sm mb-[10px]">Stoploss Distance (%) :</h3>
-                <Input label="" type="number" inputClass="w-[150px] text-3xl font-semibold" :modelValue="maePercentage"
-                    @update:modelValue="handleMaePercentageChange" />
+                <Input label="" type="number" inputClass="w-[150px] text-3xl font-semibold" v-model="maePercentage"
+                    :min="maeRange.min" :max="maeRange.max" />
             </div>
         </div>
     </div>
