@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
-import { tabGroupClasses, boxClasses, sliderStyle, labelStyle } from './commonCssClasses'
+import { ref, onMounted, onUnmounted, watch, nextTick} from 'vue'
+import { tabGroupClasses, sliderStyle, labelStyle } from './commonCssClasses'
 import { formatLargeNumber } from './PnlChartUtils'
 import Info from '../../atoms/Info.vue'
 import { chartDescriptions } from './PnlChartUtils'
@@ -43,18 +43,14 @@ const yAxisRange = ref({
   min: Number.MAX_SAFE_INTEGER,
   max: Number.MIN_SAFE_INTEGER
 })
-
-
-
-
-
 const chartOptions = ref({
   credits: {
     enabled: false,
   },
   chart: {
     type: 'scatter',
-    backgroundColor: '#262627'
+    backgroundColor: '#262627',
+    animation: false
   },
   legend: {
     enabled: false
@@ -135,40 +131,59 @@ const returnPointRadius = (pointValue, maxValue) => {
 }
 
 const updateSliderAnnotation = (newMaePercentage) => {
-
   newMaePercentage = Number(newMaePercentage);
-
-  if(chartRef.value && chartRef.value.chart){
+  if (chartRef.value && chartRef.value.chart) {
     const chart = chartRef.value.chart;
     const annotation = chart.annotations[0];
-    
-    if(annotation) {
-      // Update shape points first without redrawing
-      annotation.shapes[0].update({
+    const yRange = yAxisRange.value;
+
+    if(annotation){
+      chart.removeAnnotation(annotation);
+    }
+
+    chart.addAnnotation({
+      draggable: "x",
+      events: {
+        drag: function(e) {
+          isUpdatingFromAnnotation.value = true;
+          const newX = Number(this.shapes[0].points[0].x.toFixed(4));
+          const boundedX = Math.min(Math.max(newX, props.maeRange.min), props.maeRange.max);
+          if (this.labels && this.labels[0]) {
+            this.labels[0].update({
+              text: `MAE: ${boundedX.toFixed(2)}%`
+            }, false);
+          }
+          setTimeout(() => {
+            isUpdatingFromAnnotation.value = false;
+          }, 0);
+        }
+      },
+      shapes: [{
+        ...sliderStyle,
+        zIndex: 1000,
         points: [{
           x: newMaePercentage,
-          y: yAxisRange.value.min,
+          y: yRange.min,
           xAxis: 0,
           yAxis: 0
         }, {
           x: newMaePercentage,
-          y: yAxisRange.value.max,
+          y: yRange.max,
           xAxis: 0,
           yAxis: 0
         }]
-      }, false);
-
-      // Then update label with a single redraw
-      annotation.labels[0].update({
+      }],
+      labels: [{
         point: {
           x: newMaePercentage,
-          y: yAxisRange.value.max,
+          y: yRange.max,
           xAxis: 0,
           yAxis: 0
         },
-        text: `MAE: ${Number(newMaePercentage).toFixed(2)}%`
-      }, false);
-    }
+        text: `MAE: ${newMaePercentage.toFixed(2)}%`,
+        ...labelStyle
+      }]
+    });
   }
 };
 
@@ -198,9 +213,6 @@ const updateChartConfigData = () => {
 
   yAxisRange.value = yRange;
 
-  console.log('yAxisRange', {yRange});
-  
-
   chartOptions.value = {
     ...chartOptions.value,
     xAxis: {
@@ -208,51 +220,6 @@ const updateChartConfigData = () => {
       min: props.maeRange.min,
       max: props.maeRange.max
     },
-    annotations: [{
-      draggable: "x",
-      events: {
-        drag: function(e) {
-          isUpdatingFromAnnotation.value = true;
-          const newX = Number(this.shapes[0].points[0].x.toFixed(4));
-          const boundedX = Math.min(Math.max(newX, props.maeRange.min), props.maeRange.max);
-          emit('update:maePercentage', boundedX.toFixed(2));
-          
-          if (this.labels && this.labels[0]) {
-            this.labels[0].update({
-              text: `MAE: ${boundedX.toFixed(2)}%`
-            }, false);
-          }
-          setTimeout(() => {
-            isUpdatingFromAnnotation.value = false;
-          }, 0);
-        }
-      },
-      shapes: [{
-        ...sliderStyle,
-        zIndex: 1000,
-        points: [{
-          x: props.maePercentage,
-          y: yRange.min,
-          xAxis: 0,
-          yAxis: 0
-        }, {
-          x: props.maePercentage,
-          y: yRange.max,
-          xAxis: 0,
-          yAxis: 0
-        }]
-      }],
-      labels: [{
-        point: {
-          x: props.maePercentage,
-          y: yRange.max,
-          xAxis: 0,
-          yAxis: 0
-        },
-        text: `MAE: ${props.maePercentage.toFixed(2)}%`,
-        ...labelStyle
-      }]
-    }],
     series: [{
       name: 'Winning Trades',
       color: '#4C9077',
@@ -290,6 +257,7 @@ const updateChartConfigData = () => {
       }),
     }]
   };
+  updateSliderAnnotation(props.maePercentage);
 }
 
 const handlePnlClick = (isPercentage) => {
