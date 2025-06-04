@@ -115,8 +115,6 @@ const chartOptions = computed(() => ({
         tickAmount: 10,
         title: null,
         gridLineWidth: 0,
-        gridLineColor: '#404040',
-        gridLineDashStyle: 'Dash',
         lineWidth: 0,
         tickWidth: 0,
         labels: {
@@ -127,8 +125,6 @@ const chartOptions = computed(() => ({
     },
     yAxis: {
         gridLineWidth: 0,
-        gridLineColor: '#404040',
-        gridLineDashStyle: 'Dash',
         lineWidth: 0,
         title: {
             text: null

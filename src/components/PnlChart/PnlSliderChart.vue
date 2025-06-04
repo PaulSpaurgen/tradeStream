@@ -27,10 +27,20 @@ let resizeObserver = null
 const isYaxisPercentage = ref(false)
 
 const chartOptions = ref({
-  height: 400,
+  credits: {
+    enabled: false,
+  },
   chart: {
     type: 'scatter',
     backgroundColor: '#262627'
+  },
+  legend: {
+    itemStyle: {
+      color: '#676768'
+    },
+    itemHoverStyle: {
+      color: '#9CA3AF'
+    }
   },
   title: {
     text: null
@@ -43,7 +53,7 @@ const chartOptions = ref({
       const pnlValue = isYaxisPercentage.value
         ? (this.y * 100).toFixed(2) + '%'
         : '$' + formatLargeNumber(this.y);
-      
+
       const maeValue = this.x.toFixed(2) + '%'
 
       const seriesColor = this.series.color;
@@ -74,7 +84,9 @@ const chartOptions = ref({
         fontSize: '12px'
       }
     },
-    maxPadding: 0.1
+    formatter: function () {
+      return this.value + '%'
+    }
   },
   yAxis: {
     gridLineWidth: 0,
@@ -99,12 +111,21 @@ const chartOptions = ref({
   series: []
 })
 
+const returnPointRadius = (pointValue, maxValue) => {
+  const maxRadius = 10
+  const minRadius = 2
+  const percentage = pointValue / maxValue
+  console.log({ percentage, radius: Math.round(minRadius + (maxRadius - minRadius) * percentage) })
+  return Math.round(minRadius + (maxRadius - minRadius) * percentage)
+}
+
 const updateChartConfigData = () => {
   const xRange = {
     min: Number.MAX_SAFE_INTEGER,
     max: Number.MIN_SAFE_INTEGER
   }
   const trades = props.trades
+  let maxValue = 0
   const winningTrades = []
   const losingTrades = []
 
@@ -116,7 +137,7 @@ const updateChartConfigData = () => {
 
     const yValue = isYaxisPercentage.value ? value.pnl_percent : value.pnl_usd;
     const absYValue = Math.abs(yValue);
-
+    maxValue = Math.max(maxValue, absYValue)
     if (value?.pnl_percent > 0) {
       winningTrades.push([value.mae_percent * 100, absYValue])
     } else {
@@ -136,28 +157,37 @@ const updateChartConfigData = () => {
     },
     series: [{
       name: 'Winning Trades',
-      data: winningTrades,
       color: '#4C9077',
-      showInLegend: false,
-      marker: {
-        radius: 3, 
-        symbol: 'circle',
-        lineWidth: 1,
-        lineColor: '#4C9077',
-        fillColor: '#65C49D'
-      }
+      data: winningTrades.map((value, i) => {
+        return {
+          x: value[0],
+          y: value[1],
+          marker: {
+            radius: returnPointRadius(value[1], maxValue),
+            fillColor: '#262627',
+            lineColor: '#4C9077',
+            lineWidth: 2,
+            symbol: 'circle',
+          }
+        }
+      }),
     }, {
       name: 'Losing Trades',
-      data: losingTrades,
       color: '#B4465A',
-      showInLegend: false,
-      marker: {
-        radius: 3,
-        symbol: 'circle',
-        lineWidth: 1,
-        lineColor: '#B4465A',
-        fillColor: '#DE576F'
-      }
+      data: losingTrades.map((value, i) => {
+        return {
+          x: value[0],
+          y: value[1],
+          color: '#B4465A',
+          marker: {
+            radius: returnPointRadius(value[1], maxValue),
+            fillColor: '#262627',
+            lineColor: '#B4465A',
+            lineWidth: 2,
+            symbol: 'circle',
+          }
+        }
+      }),
     }]
   };
 }
@@ -205,9 +235,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div  >
+  <div>
     <div class="flex justify-between mb-4">
-      <p class="text-2xl font-semibold">Stoploss Distribution <span ><Info title="Stoploss Distribution" :description="chartDescriptions.slider" /></span></p>
+      <p class="text-2xl font-semibold">Stoploss Distribution <span>
+          <Info title="Stoploss Distribution" :description="chartDescriptions.slider" />
+        </span></p>
       <div :class=[tabGroupClasses.parentTabGroupClass]>
         <button @click="handlePnlClick(false)" :class="[
           'flex gap-2 items-center',
@@ -216,7 +248,8 @@ onUnmounted(() => {
             ? tabGroupClasses.selectedTabClass
             : tabGroupClasses.unselectedTabClass
         ]">
-          PnL $ <Info title="PnL $" description="PnL $ (Y-axis) is the profit or loss from a trade in USD." />
+          PnL $
+          <Info title="PnL $" description="PnL $ (Y-axis) is the profit or loss from a trade in USD." />
         </button>
         <button @click="handlePnlClick(true)" :class="[
           'flex gap-2 items-center',
@@ -225,17 +258,19 @@ onUnmounted(() => {
             ? tabGroupClasses.selectedTabClass
             : tabGroupClasses.unselectedTabClass
         ]">
-          PnL % <Info title="PnL %" description="PnL % (Y-axis) is the profit or loss from a trade as a percentage of the initial stoploss." />
+          PnL %
+          <Info title="PnL %"
+            description="PnL % (Y-axis) is the profit or loss from a trade as a percentage of the initial stoploss." />
         </button>
       </div>
     </div>
 
-      <highcharts ref="chartRef" :options="chartOptions" id="high-sky-high"
-       ></highcharts>
+    <highcharts ref="chartRef" :options="chartOptions" id="high-sky-high"></highcharts>
 
-      <div class="flex w-full justify-center items-center mt-4 gap-2">
-        <div class="text-white-800 text-sm">MAE (%)</div>
-        <Info title="MAE" description="MAE is the average of the absolute difference between the actual stoploss and the optimal stoploss." />
-      </div>
+    <div class="flex w-full justify-center items-center mt-4 gap-2">
+      <div class="text-white-800 text-sm">MAE (%)</div>
+      <Info title="MAE"
+        description="MAE is the average of the absolute difference between the actual stoploss and the optimal stoploss." />
+    </div>
   </div>
 </template>

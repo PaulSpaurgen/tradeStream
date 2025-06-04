@@ -12,8 +12,8 @@ export const formatLargeNumber = (value) => {
       formattedValue = value.toFixed(2)
     }
 
-    // Remove trailing zeros after decimal point
-    return formattedValue.replace(/\.?0+$/, '')
+    // First remove trailing zeros after decimal point, then remove decimal point if it's the last character
+    return formattedValue.replace(/\.?0+$/, '').replace(/\.$/, '')
 }
 export const chartDescriptions = {
   slider: `With this chart you can
