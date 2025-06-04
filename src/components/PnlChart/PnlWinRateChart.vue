@@ -48,7 +48,7 @@ const chartOptions = ref({
         shared: true,
         borderRadius: 0,
         borderWidth: 1,
-        borderColor: '#65C49D',
+        borderColor: '#5F93F5',
         fontFamily: 'Averta',
         useHTML: true,
         formatter: function () {
@@ -56,6 +56,7 @@ const chartOptions = ref({
             const pnlValue = isValueByExpectedValue.value
                 ? '$' + formatLargeNumber(this.y)
                 : (this.y * 100).toFixed(2) + '%';
+          
 
             return `
                 <div style="text-align: left; font-family: Averta;">

@@ -31,13 +31,13 @@ const maeRangeValues = computed(() => {
         min: Number.MAX_SAFE_INTEGER,
         max: Number.MIN_SAFE_INTEGER
     }
-    
+
     trades.value?.forEach(trade => {
         const maePercent = trade.mae_percent * 100
         range.min = Math.min(range.min, maePercent)
         range.max = Math.max(range.max, maePercent)
     })
-    
+
     return range
 })
 
@@ -54,9 +54,6 @@ onMounted(async () => {
     isLoading.value = false
 })
 
-watch(maePercentage, () => {
-    // The computed properties will automatically update when maePercentage changes
-})
 
 const calculateTotalProfit = (trades) => {
     return trades.reduce((acc, trade) => acc + trade.pnl_usd, 0)
@@ -107,7 +104,7 @@ const retrunColorCodedValue = (number) => {
             </div>
             <div :class="[boxClasses.boxClass, 'w-full mb-[20px] ']">
                 <div>
-                    <PnlDifferentiatorChart :trades="trades" v-model:maePercentage="maePercentage"
+                    <PnlDifferentiatorChart :trades="trades" :maePercentage="maePercentage"
                         :currentTotalProfit="currentTotalProfit" :newTotalProfit="newTotalProfit" />
 
                 </div>
@@ -166,10 +163,9 @@ const retrunColorCodedValue = (number) => {
                     </div>
                 </div>
             </div>
-            <div :class="[boxClasses.smallBoxClass, 'mb-[10px]']">
-                <h3 class="text-gray-400 text-sm mb-[10px]">Stoploss Distance (%) :</h3>
-                <Input label="" type="number" inputClass="w-[150px] text-3xl font-semibold" v-model="maePercentage"
-                    :min="maeRange.min" :max="maeRange.max" />
+            <div :class="[boxClasses.smallBoxClass, 'mb-[10px] pt-[20px]']">
+                <Input label="Stoploss Distance" type="number" inputClass="w-[150px] text-xl font-semibold" v-model="maePercentage"
+                    :min="maeRange.min" :max="maeRange.max" :specialChar=" '%'" />
             </div>
         </div>
     </div>

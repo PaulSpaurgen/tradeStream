@@ -164,7 +164,6 @@ const updateChartConfigData = () => {
         drag: function(e) {
           const newX = Number(this.shapes[0].points[0].x.toFixed(4));
           const boundedX = Math.min(Math.max(newX, props.maeRange.min), props.maeRange.max);
-          console.log('Dragging - Current value:', boundedX);
           emit('update:maePercentage', boundedX.toFixed(2));
           
           if (this.labels && this.labels[0]) {
