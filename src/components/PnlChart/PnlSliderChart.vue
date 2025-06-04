@@ -278,9 +278,9 @@ const updateChartConfigData = () => {
       }),
     }]
   };
-  setTimeout(() => {
-    updateSliderAnnotation(props.maePercentage);
-  }, 100);
+  nextTick(() => {
+      updateSliderAnnotation(props.maePercentage);
+    });
 }
 
 const handlePnlClick = (isPercentage) => {
