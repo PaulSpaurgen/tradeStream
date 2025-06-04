@@ -54,7 +54,7 @@ const chartOptions = ref({
         formatter: function () {
             const maeValue = (this.x * 100).toFixed(2);
             const pnlValue = isValueByExpectedValue.value
-                ? '$' + formatLargeNumber(this.y) 
+                ? '$' + formatLargeNumber(this.y)
                 : (this.y * 100).toFixed(2) + '%';
 
             return `
@@ -93,8 +93,8 @@ const chartOptions = ref({
                 color: '#676768'
             },
             formatter: function () {
-                return isValueByExpectedValue.value 
-                    ? '$' + formatLargeNumber(this.value) 
+                return isValueByExpectedValue.value
+                    ? '$' + formatLargeNumber(this.value)
                     : (this.value * 100).toFixed(1) + '%';
             }
         },
@@ -132,12 +132,12 @@ const findYValueAtMAE = (maeValue) => {
     const yValue = yData ? yData[closestIndex] : null;
 
     console.log({ yValue })
-    
+
     return yValue;
 }
 
 const updateChartConfigData = () => {
-    
+
     // Create data pairs for both percentage and USD series
     const xRange = {
         min: Number.MAX_SAFE_INTEGER,
@@ -174,7 +174,7 @@ const updateChartConfigData = () => {
             ...chartOptions.value.xAxis,
             type: 'linear',
             min: xRange.min,
-            max:  xRange.max
+            max: xRange.max
         },
         annotations: [{
             visible: true,
@@ -182,28 +182,30 @@ const updateChartConfigData = () => {
             labels: [{
                 point: {
                     x: props.maePercentage / 100, // Convert percentage to decimal
-                    y: yValue,
+                    y: yRange.max * 0.98,
                     xAxis: 0,
                     yAxis: 0
                 },
                 text: `
                 MAE: ${props.maePercentage}%
-                | ${isValueByExpectedValue.value ? 'Expected Value: $' + yValue?.toFixed(2) : 'Win Rate: ' + (yValue * 100)?.toFixed(1) + '%'}`,
-                backgroundColor: '#FCFEFD',
+                | ${isValueByExpectedValue.value ? 'EV: $' + yValue?.toFixed(2) : 'Win Rate: ' + (yValue * 100)?.toFixed(1) + '%'}`,
+                backgroundColor: '#4C9077',
                 borderColor: '#65C49D',
+                fontFamily: 'Averta',
                 borderWidth: 1,
-                borderRadius: 0,
+                borderRadius: 2,
                 padding: 6,
                 style: {
+                    color: '#ffffff',
                     fontSize: '12px',
-                    fontWeight: 'bold',
-                    fontFamily: 'Averta'
+                    fontWeight: 'bold'
                 },
                 verticalAlign: 'bottom',
-                y: -10,
-                allowOverlap: true,
+                allowOverlap: false,
                 crop: false,
+                zIndex: 0,
                 shape: 'rect'
+
             }],
             shapes: [{
                 type: 'path',
@@ -211,18 +213,18 @@ const updateChartConfigData = () => {
                 stroke: '#65C49D',
                 dashStyle: 'Dash',
                 points: [{
-                    x: props.maePercentage / 100, // Convert percentage to decimal
-                    y: 0,
+                    x: props.maePercentage / 100,
+                    y: yRange.min * 0.92,
                     xAxis: 0,
                     yAxis: 0
                 }, {
-                    x: props.maePercentage / 100, // Convert percentage to decimal
-                    y: yValue,
+                    x: props.maePercentage / 100,
+                    y: yRange.max * 0.98,
                     xAxis: 0,
                     yAxis: 0
                 }],
             }],
-            zIndex: 10,
+            zIndex: 0,
             labelOptions: {
                 style: {
                     fontSize: '11px'
@@ -233,7 +235,7 @@ const updateChartConfigData = () => {
             {
                 name: isValueByExpectedValue.value ? 'Expected Value' : 'Win Rate',
                 data: chartData,
-                color: '#54A184',
+                color: '#5F93F5',
                 lineWidth: 2,
                 type: 'area',
                 fillOpacity: 0.3,
@@ -245,8 +247,8 @@ const updateChartConfigData = () => {
                         y2: 1
                     },
                     stops: [
-                        [0, 'rgba(84, 161, 132, 0.6)'],
-                        [1, 'rgba(84, 161, 132, 0)']
+                        [0, 'rgba(95, 147, 245, 0.6)'],
+                        [1, 'rgba(95, 147, 245, 0)']
                     ]
                 }
             }
@@ -277,7 +279,9 @@ const handlePnlClick = (value) => {
 <template>
     <div>
         <div class="flex justify-between mb-4">
-            <p class="text-gray-100 text-2xl font-semibold">Trade Risk Analysis <span ><Info title="Trade Risk Analysis" :description="chartDescriptions.distribution" /></span></p>
+            <p class="text-gray-100 text-2xl font-semibold">Trade Risk Analysis <span>
+                    <Info title="Trade Risk Analysis" :description="chartDescriptions.distribution" />
+                </span></p>
             <div :class=[tabGroupClasses.parentTabGroupClass]>
                 <button @click="handlePnlClick(true)" :class="[
                     tabGroupClasses.commonTabClass,

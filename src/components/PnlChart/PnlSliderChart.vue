@@ -108,7 +108,6 @@ const chartOptions = ref({
       }
     }
   },
-  series: []
 })
 
 const returnPointRadius = (pointValue, maxValue) => {
