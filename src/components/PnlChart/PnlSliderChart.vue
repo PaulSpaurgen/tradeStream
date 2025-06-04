@@ -37,6 +37,14 @@ const chartRef = ref(null)
 let resizeObserver = null
 
 const isYaxisPercentage = ref(false)
+const isUpdatingFromAnnotation = ref(false)
+
+const yAxisRange = ref({
+  min: Number.MAX_SAFE_INTEGER,
+  max: Number.MIN_SAFE_INTEGER
+})
+
+
 
 
 
@@ -126,17 +134,54 @@ const returnPointRadius = (pointValue, maxValue) => {
   return Math.round(minRadius + (maxRadius - minRadius) * percentage)
 }
 
+const updateSliderAnnotation = (newMaePercentage) => {
+
+  newMaePercentage = Number(newMaePercentage);
+
+  if(chartRef.value && chartRef.value.chart){
+    const chart = chartRef.value.chart;
+    const annotation = chart.annotations[0];
+    
+    if(annotation) {
+      // Update shape points first without redrawing
+      annotation.shapes[0].update({
+        points: [{
+          x: newMaePercentage,
+          y: yAxisRange.value.min,
+          xAxis: 0,
+          yAxis: 0
+        }, {
+          x: newMaePercentage,
+          y: yAxisRange.value.max,
+          xAxis: 0,
+          yAxis: 0
+        }]
+      }, false);
+
+      // Then update label with a single redraw
+      annotation.labels[0].update({
+        point: {
+          x: newMaePercentage,
+          y: yAxisRange.value.max,
+          xAxis: 0,
+          yAxis: 0
+        },
+        text: `MAE: ${Number(newMaePercentage).toFixed(2)}%`
+      }, false);
+    }
+  }
+};
+
 const updateChartConfigData = () => {
+  const yRange = {
+    min: Number.MAX_SAFE_INTEGER,
+    max: Number.MIN_SAFE_INTEGER
+  }
 
   const trades = props.trades
   let maxValue = 0
   const winningTrades = []
   const losingTrades = []
-
-  const yRange = {
-    min: Number.MAX_SAFE_INTEGER,
-    max: Number.MIN_SAFE_INTEGER
-  }
 
   trades.forEach((value, i) => {
     const yValue = isYaxisPercentage.value ? value.pnl_percent : value.pnl_usd;
@@ -151,6 +196,11 @@ const updateChartConfigData = () => {
     }
   });
 
+  yAxisRange.value = yRange;
+
+  console.log('yAxisRange', {yRange});
+  
+
   chartOptions.value = {
     ...chartOptions.value,
     xAxis: {
@@ -162,6 +212,7 @@ const updateChartConfigData = () => {
       draggable: "x",
       events: {
         drag: function(e) {
+          isUpdatingFromAnnotation.value = true;
           const newX = Number(this.shapes[0].points[0].x.toFixed(4));
           const boundedX = Math.min(Math.max(newX, props.maeRange.min), props.maeRange.max);
           emit('update:maePercentage', boundedX.toFixed(2));
@@ -171,6 +222,9 @@ const updateChartConfigData = () => {
               text: `MAE: ${boundedX.toFixed(2)}%`
             }, false);
           }
+          setTimeout(() => {
+            isUpdatingFromAnnotation.value = false;
+          }, 0);
         }
       },
       shapes: [{
@@ -250,6 +304,11 @@ watch(() => props.trades, (newTrades) => {
     updateChartConfigData();
   }
 }, { immediate: true })
+
+watch(() => props.maePercentage, (newMaePercentage) => {
+  if (isUpdatingFromAnnotation.value) return;
+  updateSliderAnnotation(newMaePercentage);
+}, { immediate: false })
 
 onMounted(() => {
   if (chartRef.value) {

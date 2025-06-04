@@ -164,7 +164,7 @@ const retrunColorCodedValue = (number) => {
                 </div>
             </div>
             <div :class="[boxClasses.smallBoxClass, 'mb-[10px] pt-[20px]']">
-                <Input label="Stoploss Distance" type="number" inputClass="w-[150px] text-xl font-semibold" v-model="maePercentage"
+                <Input label="Stoploss Distance" type="number" inputClass="w-[150px] text-2xl font-semibold" v-model="maePercentage"
                     :min="maeRange.min" :max="maeRange.max" :specialChar=" '%'" />
             </div>
         </div>
