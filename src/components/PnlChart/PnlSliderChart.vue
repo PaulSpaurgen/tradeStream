@@ -33,6 +33,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:maePercentage'])
 
+
+
 const chartRef = ref(null)
 let resizeObserver = null
 
@@ -50,7 +52,6 @@ const chartOptions = ref({
   chart: {
     type: 'scatter',
     backgroundColor: '#262627',
-    animation: false
   },
   legend: {
     enabled: false
@@ -114,7 +115,7 @@ const chartOptions = ref({
       },
       formatter: function () {
         if (isYaxisPercentage.value) {
-          return (this.value * 100).toFixed(1) + '%';
+          return (this.value * 100).toFixed(0) + '%';
         } else {
           return '$' + formatLargeNumber(this.value);
         }
@@ -122,6 +123,19 @@ const chartOptions = ref({
     }
   },
 })
+
+const getFullChartYRange = () => {
+  if (chartRef.value && chartRef.value.chart) {
+    const chart = chartRef.value.chart;
+    const yAxis = chart.yAxis[0];
+    const yMin = yAxis.min;
+    const yMax = yAxis.max;
+
+    return { min: yMin, max: yMax };
+  }
+
+  return { min: sliderLimits.value.min, max: sliderLimits.value.max };
+}
 
 const returnPointRadius = (pointValue, maxValue) => {
   const maxRadius = 10
@@ -135,8 +149,10 @@ const updateSliderAnnotation = (newMaePercentage) => {
   if (chartRef.value && chartRef.value.chart) {
     const chart = chartRef.value.chart;
     const annotation = chart.annotations[0];
-    const yRange = yAxisRange.value;
-
+    const yRange = {
+      min: chart.yAxis[0].min || yAxisRange.value.min,
+      max: chart.yAxis[0].max || yAxisRange.value.max
+    };
     if(annotation){
       chart.removeAnnotation(annotation);
     }
@@ -148,6 +164,7 @@ const updateSliderAnnotation = (newMaePercentage) => {
           isUpdatingFromAnnotation.value = true;
           const newX = Number(this.shapes[0].points[0].x.toFixed(4));
           const boundedX = Math.min(Math.max(newX, props.maeRange.min), props.maeRange.max);
+          emit('update:maePercentage', newX.toFixed(2));
           if (this.labels && this.labels[0]) {
             this.labels[0].update({
               text: `MAE: ${boundedX.toFixed(2)}%`
@@ -183,7 +200,7 @@ const updateSliderAnnotation = (newMaePercentage) => {
         text: `MAE: ${newMaePercentage.toFixed(2)}%`,
         ...labelStyle
       }]
-    });
+    }, true);
   }
 };
 
@@ -210,8 +227,12 @@ const updateChartConfigData = () => {
       losingTrades.push([value.mae_percent * 100, absYValue])
     }
   });
+ 
+  if(yAxisRange.value.min === Number.MAX_SAFE_INTEGER || yAxisRange.value.max === Number.MIN_SAFE_INTEGER){
+    yAxisRange.value = yRange;
+  }
 
-  yAxisRange.value = yRange;
+
 
   chartOptions.value = {
     ...chartOptions.value,
@@ -257,7 +278,9 @@ const updateChartConfigData = () => {
       }),
     }]
   };
-  updateSliderAnnotation(props.maePercentage);
+  setTimeout(() => {
+    updateSliderAnnotation(props.maePercentage);
+  }, 100);
 }
 
 const handlePnlClick = (isPercentage) => {
@@ -278,33 +301,7 @@ watch(() => props.maePercentage, (newMaePercentage) => {
   updateSliderAnnotation(newMaePercentage);
 }, { immediate: false })
 
-onMounted(() => {
-  if (chartRef.value) {
-    resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-          nextTick(() => {
-            if (chartRef.value && chartRef.value.chart) {
-              const chart = chartRef.value.chart;
-              chart.reflow();
-            }
-          });
-        }
-      }
-    });
 
-    const chartContainer = chartRef.value.$el || chartRef.value;
-    if (chartContainer) {
-      resizeObserver.observe(chartContainer);
-    }
-  }
-})
-
-onUnmounted(() => {
-  if (resizeObserver) {
-    resizeObserver.disconnect();
-  }
-})
 </script>
 
 <template>
