@@ -58,7 +58,10 @@ const chartOptions = computed(() => ({
     height: 400,
     chart: {
         type: 'line',
-        backgroundColor: '#262627'
+        backgroundColor: '#262627',
+        animation: {
+            duration: 10
+        }
     },
     title: {
         text: null,
@@ -217,19 +220,40 @@ const chartOptions = computed(() => ({
     }
 }));
 
-// Watch for changes in trades prop
-watch(() => props.trades, (newTrades) => {
-    if (newTrades && newTrades.length > 0) {
-        // Chart will automatically update through computed properties
+// Watch for changes in maePercentage with immediate effect
+watch([() => props.maePercentage, () => props.trades], () => {
+    if (props.trades && props.trades.length > 0) {
+        // Force chart update by accessing the chart instance
+        const chart = document.getElementById('pnl-differentiator-chart')?.__vue__?.chart;
+        if (chart) {
+            chart.update({
+                series: [
+                    {
+                        name: 'Range Area',
+                        data: actualReturns.value.map((point, index) => {
+                            const optimizedPoint = optimizedReturns.value[index];
+                            const diff = optimizedPoint[1] - point[1];
+                            return {
+                                x: point[0],
+                                low: Math.min(point[1], optimizedPoint[1]),
+                                high: Math.max(point[1], optimizedPoint[1]),
+                                isNegative: diff < 0
+                            };
+                        })
+                    },
+                    {
+                        name: 'Current P&L',
+                        data: actualReturns.value
+                    },
+                    {
+                        name: 'Expected P&L',
+                        data: optimizedReturns.value
+                    }
+                ]
+            }, true, false); 
+        }
     }
 }, { immediate: true });
-
-// Watch for changes in maePercentage
-watch(() => props.maePercentage, () => {
-    if (typeof props.maePercentage === 'number') {
-        // Chart will automatically update through computed properties
-    }
-}, { immediate: false });
 </script>
 
 <template>
