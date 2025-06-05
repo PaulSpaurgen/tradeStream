@@ -41,21 +41,22 @@ const chartOptions = ref({
             fontSize: '12px'
         },
         itemHoverStyle: {
-            color: '#ffffff'
+            color: '#FCFEFD'
         }
     },
     tooltip: {
         shared: true,
         borderRadius: 0,
         borderWidth: 1,
-        borderColor: '#65C49D',
+        borderColor: '#5F93F5',
         fontFamily: 'Averta',
         useHTML: true,
         formatter: function () {
             const maeValue = (this.x * 100).toFixed(2);
             const pnlValue = isValueByExpectedValue.value
-                ? '$' + formatLargeNumber(this.y) 
+                ? '$' + formatLargeNumber(this.y)
                 : (this.y * 100).toFixed(2) + '%';
+          
 
             return `
                 <div style="text-align: left; font-family: Averta;">
@@ -93,9 +94,9 @@ const chartOptions = ref({
                 color: '#676768'
             },
             formatter: function () {
-                return isValueByExpectedValue.value 
-                    ? '$' + formatLargeNumber(this.value) 
-                    : (this.value * 100).toFixed(1) + '%';
+                return isValueByExpectedValue.value
+                    ? '$' + formatLargeNumber(this.value)
+                    : (this.value * 100).toFixed(0) + '%';
             }
         },
     },
@@ -130,36 +131,46 @@ const findYValueAtMAE = (maeValue) => {
         : props.response?.recovery_rate_by_mae;
 
     const yValue = yData ? yData[closestIndex] : null;
-    
+
+    console.log({ yValue })
+
     return yValue;
 }
 
 const updateChartConfigData = () => {
-    console.log('Updating chart with maePercentage:', props.maePercentage)
-    
+
     // Create data pairs for both percentage and USD series
     const xRange = {
+        min: Number.MAX_SAFE_INTEGER,
+        max: Number.MIN_SAFE_INTEGER
+    }
+    const yRange = {
         min: Number.MAX_SAFE_INTEGER,
         max: Number.MIN_SAFE_INTEGER
     }
     const evYaxisData = props.response?.ev_by_mae
     const winRateYaxisData = props.response?.recovery_rate_by_mae
 
-    console.log('EV Data:', evYaxisData)
-    console.log('Win Rate Data:', winRateYaxisData)
+    const yAxisData = isValueByExpectedValue.value ? evYaxisData : winRateYaxisData
+
 
     const chartData = props.response?.mae_levels?.map((val, i) => {
+        yRange.min = Math.min(yRange.min, yAxisData[i] || 0)
+        yRange.max = Math.max(yRange.max, yAxisData[i] || 0)
         xRange.min = Math.min(xRange.min, val)
         xRange.max = Math.max(xRange.max, val)
-        return isValueByExpectedValue.value 
-            ? [val , evYaxisData[i] || 0] 
-            : [val, (winRateYaxisData[i] || 0)];
+        return [val, yAxisData[i] || 0]
     })
 
     const yValue = findYValueAtMAE(props.maePercentage);
 
     chartOptions.value = {
         ...chartOptions.value,
+        yAxis: {
+            ...chartOptions.value.yAxis,
+            min: yRange.min,
+            max: yRange.max
+        },
         xAxis: {
             ...chartOptions.value.xAxis,
             type: 'linear',
@@ -172,28 +183,30 @@ const updateChartConfigData = () => {
             labels: [{
                 point: {
                     x: props.maePercentage / 100, // Convert percentage to decimal
-                    y: yValue,
+                    y: yRange.max * 0.98,
                     xAxis: 0,
                     yAxis: 0
                 },
                 text: `
                 MAE: ${props.maePercentage}%
-                | ${isValueByExpectedValue.value ? 'Expected Value: $' + yValue?.toFixed(2) : 'Win Rate: ' + (yValue * 100)?.toFixed(1) + '%'}`,
-                backgroundColor: '#FCFEFD',
+                | ${isValueByExpectedValue.value ? 'EV: $' + yValue?.toFixed(2) : 'Win Rate: ' + (yValue * 100)?.toFixed(1) + '%'}`,
+                backgroundColor: '#4C9077',
                 borderColor: '#65C49D',
+                fontFamily: 'Averta',
                 borderWidth: 1,
-                borderRadius: 0,
+                borderRadius: 2,
                 padding: 6,
                 style: {
+                    color: '#ffffff',
                     fontSize: '12px',
-                    fontWeight: 'bold',
-                    fontFamily: 'Averta'
+                    fontWeight: 'bold'
                 },
                 verticalAlign: 'bottom',
-                y: -10,
-                allowOverlap: true,
+                allowOverlap: false,
                 crop: false,
+                zIndex: 0,
                 shape: 'rect'
+
             }],
             shapes: [{
                 type: 'path',
@@ -201,18 +214,18 @@ const updateChartConfigData = () => {
                 stroke: '#65C49D',
                 dashStyle: 'Dash',
                 points: [{
-                    x: props.maePercentage / 100, // Convert percentage to decimal
-                    y: 0,
+                    x: props.maePercentage / 100,
+                    y: yRange.min * 0.92,
                     xAxis: 0,
                     yAxis: 0
                 }, {
-                    x: props.maePercentage / 100, // Convert percentage to decimal
-                    y: yValue,
+                    x: props.maePercentage / 100,
+                    y: yRange.max * 0.98,
                     xAxis: 0,
                     yAxis: 0
                 }],
             }],
-            zIndex: 10,
+            zIndex: 0,
             labelOptions: {
                 style: {
                     fontSize: '11px'
@@ -223,7 +236,7 @@ const updateChartConfigData = () => {
             {
                 name: isValueByExpectedValue.value ? 'Expected Value' : 'Win Rate',
                 data: chartData,
-                color: '#54A184',
+                color: '#5F93F5',
                 lineWidth: 2,
                 type: 'area',
                 fillOpacity: 0.3,
@@ -235,8 +248,8 @@ const updateChartConfigData = () => {
                         y2: 1
                     },
                     stops: [
-                        [0, 'rgba(84, 161, 132, 0.6)'],
-                        [1, 'rgba(84, 161, 132, 0)']
+                        [0, 'rgba(95, 147, 245, 0.6)'],
+                        [1, 'rgba(95, 147, 245, 0)']
                     ]
                 }
             }
@@ -267,7 +280,9 @@ const handlePnlClick = (value) => {
 <template>
     <div>
         <div class="flex justify-between mb-4">
-            <p class="text-gray-100 text-2xl font-semibold">Trade Risk Analysis <span ><Info title="Trade Risk Analysis" :description="chartDescriptions.distribution" /></span></p>
+            <p class="text-gray-100 text-2xl font-semibold">Trade Risk Analysis <span>
+                    <Info title="Trade Risk Analysis" :description="chartDescriptions.distribution" />
+                </span></p>
             <div :class=[tabGroupClasses.parentTabGroupClass]>
                 <button @click="handlePnlClick(true)" :class="[
                     tabGroupClasses.commonTabClass,

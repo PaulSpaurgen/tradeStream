@@ -17,6 +17,18 @@ const props = defineProps({
   inputClass: {
     type: String,
     default: ''
+  },
+  min: {
+    type: Number,
+    default: null
+  },
+  max: {
+    type: Number,
+    default: null
+  },
+  specialChar: {
+    type: String,
+    default: ''
   }
 })
 
@@ -113,6 +125,18 @@ const handleMouseLeave = () => {
       @focus="handleFocus"
       @blur="handleBlur"
       :class="inputClasses"
+      :min="min"
+      :max="max"
+
     />
+    <span v-if="specialChar" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-[12px]">{{ specialChar }}</span>
   </div>
 </template>
+
+<style scoped>
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+</style>

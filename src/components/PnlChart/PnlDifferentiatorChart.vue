@@ -29,7 +29,10 @@ const props = defineProps({
 
 const cumilativeReturnCalculator = (trades, withMae) => {
     let cumulativeProfit = 0;
-    return trades.map((trade) => {
+    // First sort trades by timestamp
+    const sortedTrades = [...trades].sort((a, b) => a.timestamp - b.timestamp);
+    
+    return sortedTrades.map((trade) => {
         let pnlValue = trade.pnl_usd;
         const maePercentage = props.maePercentage / 100
         
@@ -69,7 +72,7 @@ const chartOptions = computed(() => ({
             fontSize: '12px'
         },
         itemHoverStyle: {
-            color: '#ffffff'
+            color: '#FCFEFD'
         }
     },
     tooltip: {
@@ -115,8 +118,6 @@ const chartOptions = computed(() => ({
         tickAmount: 10,
         title: null,
         gridLineWidth: 0,
-        gridLineColor: '#404040',
-        gridLineDashStyle: 'Dash',
         lineWidth: 0,
         tickWidth: 0,
         labels: {
@@ -127,8 +128,6 @@ const chartOptions = computed(() => ({
     },
     yAxis: {
         gridLineWidth: 0,
-        gridLineColor: '#404040',
-        gridLineDashStyle: 'Dash',
         lineWidth: 0,
         title: {
             text: null
