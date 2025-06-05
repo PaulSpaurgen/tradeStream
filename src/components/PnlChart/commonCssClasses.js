@@ -16,12 +16,12 @@ export const boxClasses = {
 
 export const sliderStyle = {
   fill: 'none',
-  stroke: '#65C49D',
+  stroke: '#929292',
   dashStyle: '',
   strokeWidth: 4,
   type: 'path',
   strokeLinecap: 'round',
-  strokeLinejoin: 'round'
+  strokeLinejoin: 'round',
 
 }
 export const labelStyle = {
@@ -33,9 +33,9 @@ export const labelStyle = {
   style: {
     color: '#ffffff',
     fontSize: '12px',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    cursor: 'grab'
   },
-  y: -5,
   align: 'center',
   verticalAlign: 'bottom',
   distance: 0,

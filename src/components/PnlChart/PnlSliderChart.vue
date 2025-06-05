@@ -36,7 +36,6 @@ const emit = defineEmits(['update:maePercentage'])
 
 
 const chartRef = ref(null)
-let resizeObserver = null
 
 const isYaxisPercentage = ref(false)
 const isUpdatingFromAnnotation = ref(false)
@@ -96,11 +95,11 @@ const chartOptions = ref({
       style: {
         color: '#676768',
         fontSize: '12px',
+      },
+      formatter: function() {
+        return this.value + '%'
       }
     },
-    formatter: function () {
-      return this.value + '%'
-    }
   },
   yAxis: {
     gridLineWidth: 0,
@@ -123,19 +122,6 @@ const chartOptions = ref({
     }
   },
 })
-
-const getFullChartYRange = () => {
-  if (chartRef.value && chartRef.value.chart) {
-    const chart = chartRef.value.chart;
-    const yAxis = chart.yAxis[0];
-    const yMin = yAxis.min;
-    const yMax = yAxis.max;
-
-    return { min: yMin, max: yMax };
-  }
-
-  return { min: sliderLimits.value.min, max: sliderLimits.value.max };
-}
 
 const returnPointRadius = (pointValue, maxValue) => {
   const maxRadius = 10
@@ -160,24 +146,29 @@ const updateSliderAnnotation = (newMaePercentage) => {
     chart.addAnnotation({
       draggable: "x",
       events: {
+        dragstart: function(e) {
+          this.shapes[0].graphic.css({
+            cursor: 'grabbing'
+          });
+        },
         drag: function(e) {
           isUpdatingFromAnnotation.value = true;
           const newX = Number(this.shapes[0].points[0].x.toFixed(4));
-          const boundedX = Math.min(Math.max(newX, props.maeRange.min), props.maeRange.max);
           emit('update:maePercentage', newX.toFixed(2));
-          if (this.labels && this.labels[0]) {
-            this.labels[0].update({
-              text: `MAE: ${boundedX.toFixed(2)}%`
-            }, false);
-          }
           setTimeout(() => {
             isUpdatingFromAnnotation.value = false;
           }, 0);
+        },
+        dragend: function(e) {
+          this.shapes[0].graphic.css({
+            cursor: 'grab'
+          });
         }
       },
       shapes: [{
         ...sliderStyle,
         zIndex: 1000,
+        cursor: 'grab',
         points: [{
           x: newMaePercentage,
           y: yRange.min,
@@ -193,12 +184,12 @@ const updateSliderAnnotation = (newMaePercentage) => {
       labels: [{
         point: {
           x: newMaePercentage,
-          y: yRange.max,
+          y: yRange.max * 0.5,
           xAxis: 0,
           yAxis: 0
         },
-        text: `MAE: ${newMaePercentage.toFixed(2)}%`,
-        ...labelStyle
+        text: `||`,
+        ...labelStyle,
       }]
     }, true);
   }
@@ -243,7 +234,7 @@ const updateChartConfigData = () => {
     },
     series: [{
       name: 'Winning Trades',
-      color: '#4C9077',
+      color: '#5AAB8A',
       symbol: 'circle',
       data: winningTrades.map((value, i) => {
         return {
@@ -252,7 +243,7 @@ const updateChartConfigData = () => {
           marker: {
             radius: returnPointRadius(value[1], maxValue),
             fillColor: 'transparent',
-            lineColor: '#65C49D',
+            lineColor: '#5AAB8A',
             lineWidth: 2,
             symbol: 'circle',
           }
@@ -260,7 +251,7 @@ const updateChartConfigData = () => {
       }),
     }, {
       name: 'Losing Trades',
-      color: '#DE576F',
+      color: '#B4465A',
       shape: 'circle',
       symbol: 'circle',
       data: losingTrades.map((value, i) => {
@@ -270,7 +261,7 @@ const updateChartConfigData = () => {
           marker: {
             radius: returnPointRadius(value[1], maxValue),
             fillColor: 'transparent',
-            lineColor: '#DE576F',
+            lineColor: '#B4465A',
             lineWidth: 2,
             symbol: 'circle',
           }
