@@ -111,7 +111,7 @@ const retrunColorCodedValue = (number) => {
             </div>
             <div :class="[boxClasses.boxClass, 'w-full mb-[20px]']">
                 <div>
-                    <PnlWinRateChart :response="totalResponse" v-model:maePercentage="maePercentage" />
+                    <PnlWinRateChart :response="totalResponse" :maePercentage="maePercentage" />
 
                 </div>
             </div>

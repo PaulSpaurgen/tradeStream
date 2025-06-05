@@ -269,9 +269,7 @@ watch(() => props.response, (newResponse) => {
 
 // Watch for changes in maePercentage
 watch(() => props.maePercentage, () => {
-    if (typeof props.maePercentage === 'number') {
-        updateChartConfigData()
-    }
+    updateChartConfigData()
 }, { immediate: false })
 
 const handlePnlClick = (value) => {
