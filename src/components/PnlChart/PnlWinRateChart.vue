@@ -24,6 +24,9 @@ const props = defineProps({
 const isValueByExpectedValue = ref(true)
 
 const chartOptions = ref({
+    credits: {
+        enabled: false,
+    },
     height: 400,
     chart: {
         type: 'line',
