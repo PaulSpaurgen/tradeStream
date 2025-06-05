@@ -134,9 +134,6 @@ const findYValueAtMAE = (maeValue) => {
         : props.response?.recovery_rate_by_mae;
 
     const yValue = yData ? yData[closestIndex] : null;
-
-    console.log({ yValue })
-
     return yValue;
 }
 

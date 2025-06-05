@@ -39,6 +39,7 @@ const chartRef = ref(null)
 
 const isYaxisPercentage = ref(false)
 const isUpdatingFromAnnotation = ref(false)
+const draggingTimeout = ref(null)
 
 const yAxisRange = ref({
   min: Number.MAX_SAFE_INTEGER,
@@ -139,6 +140,13 @@ const updateSliderAnnotation = (newMaePercentage) => {
       min: chart.yAxis[0].min || yAxisRange.value.min,
       max: chart.yAxis[0].max || yAxisRange.value.max
     };
+    
+    // Ensure newMaePercentage stays within xAxis bounds
+    const xAxis = chart.xAxis[0];
+    const xMin = xAxis.min || props.maeRange.min;
+    const xMax = xAxis.max || props.maeRange.max;
+    newMaePercentage = Math.max(xMin, Math.min(xMax, newMaePercentage));
+
     if(annotation){
       chart.removeAnnotation(annotation);
     }
@@ -146,29 +154,43 @@ const updateSliderAnnotation = (newMaePercentage) => {
     chart.addAnnotation({
       draggable: "x",
       events: {
-        dragstart: function(e) {
-          this.shapes[0].graphic.css({
-            cursor: 'grabbing'
-          });
-        },
         drag: function(e) {
+          // Get current xAxis bounds
+          const xAxis = this.chart.xAxis[0];
+          const xMin = xAxis.min || props.maeRange.min;
+          const xMax = xAxis.max || props.maeRange.max;
+          
+          // Ensure the annotation stays within bounds
+          const newX = Math.max(xMin, Math.min(xMax, this.shapes[0].points[0].x));
+          
           isUpdatingFromAnnotation.value = true;
-          const newX = Number(this.shapes[0].points[0].x.toFixed(4));
+          chartRef.value.chart.update({
+            tooltip: {
+              enabled: false,
+              ...chartOptions.value.tooltip
+            }
+          })
           emit('update:maePercentage', newX.toFixed(2));
-          setTimeout(() => {
+          if (draggingTimeout.value) {
+            clearTimeout(draggingTimeout.value);
+          }
+          draggingTimeout.value = setTimeout(() => {
             isUpdatingFromAnnotation.value = false;
-          }, 0);
-        },
-        dragend: function(e) {
-          this.shapes[0].graphic.css({
-            cursor: 'grab'
-          });
+            draggingTimeout.value = null;
+            chartRef.value.chart.update({
+              tooltip: {
+                enabled: true,
+                ...chartOptions.value.tooltip
+              }
+            })
+          }, 100);
         }
       },
       shapes: [{
         ...sliderStyle,
         zIndex: 1000,
         cursor: 'grab',
+        draggable: true,
         points: [{
           x: newMaePercentage,
           y: yRange.min,
@@ -333,26 +355,3 @@ watch(() => props.maePercentage, (newMaePercentage) => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.custom-slider-thumb::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 1rem;
-  height: 6rem;
-  background: #6d6d6e;
-  border: 2px solid #fcfefd;
-  border-radius: 1rem;
-  cursor: grab;
-}
-
-/* Firefox */
-.custom-slider-thumb::-moz-range-thumb {
-  width: 1rem;
-  height: 6rem;
-  border-radius: 1rem;
-  cursor: grab;
-  background: #6d6d6e;
-  border: 2px solid #fcfefd;
-}
-</style>
