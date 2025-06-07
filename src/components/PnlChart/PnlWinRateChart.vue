@@ -36,16 +36,7 @@ const chartOptions = ref({
         text: null,
     },
     legend: {
-        enabled: true,
-        align: 'center',
-        verticalAlign: 'bottom',
-        itemStyle: {
-            color: '#676768',
-            fontSize: '12px'
-        },
-        itemHoverStyle: {
-            color: '#FCFEFD'
-        }
+        enabled: false,
     },
     tooltip: {
         shared: true,
@@ -278,7 +269,7 @@ const handlePnlClick = (value) => {
 <template>
     <div>
         <div class="flex justify-between mb-4">
-            <p class="text-gray-100 text-2xl font-semibold">Trade Risk Analysis <span>
+            <p class="text-white-800 text-2xl font-semibold">Trade Risk Analysis <span>
                     <Info title="Trade Risk Analysis" :description="chartDescriptions.distribution" />
                 </span></p>
             <div :class=[tabGroupClasses.parentTabGroupClass]>

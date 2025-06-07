@@ -264,7 +264,7 @@ const updateChartConfigData = () => {
           y: value[1],
           marker: {
             radius: returnPointRadius(value[1], maxValue),
-            fillColor: 'transparent',
+            fillColor: '#65C49D4D',
             lineColor: '#5AAB8A',
             lineWidth: 2,
             symbol: 'circle',
@@ -282,7 +282,7 @@ const updateChartConfigData = () => {
           y: value[1],
           marker: {
             radius: returnPointRadius(value[1], maxValue),
-            fillColor: 'transparent',
+            fillColor: '#DE576F4D',
             lineColor: '#B4465A',
             lineWidth: 2,
             symbol: 'circle',

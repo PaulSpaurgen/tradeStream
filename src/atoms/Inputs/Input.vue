@@ -129,7 +129,7 @@ const handleMouseLeave = () => {
       :max="max"
 
     />
-    <span v-if="specialChar" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-[12px]">{{ specialChar }}</span>
+    <span v-if="specialChar" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-3xl">{{ specialChar }}</span>
   </div>
 </template>
 

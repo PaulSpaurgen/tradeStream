@@ -67,16 +67,7 @@ const chartOptions = computed(() => ({
         text: null,
     },
     legend: {
-        enabled: true,
-        align: 'center',
-        verticalAlign: 'bottom',
-        itemStyle: {
-            color: '#676768',
-            fontSize: '12px'
-        },
-        itemHoverStyle: {
-            color: '#FCFEFD'
-        }
+        enabled: false,
     },
     tooltip: {
         shared: true,
@@ -258,7 +249,7 @@ watch([() => props.maePercentage, () => props.trades], () => {
 
 <template>
     <div>
-        <p class="text-gray-100 text-2xl font-semibold mb-4">PnL Comparison <span ><Info title="PnL Comparison" :description="chartDescriptions.differentiator" /></span></p>
+        <p class="text-white-800 text-2xl font-semibold mb-4">PnL Comparison <span ><Info title="PnL Comparison" :description="chartDescriptions.differentiator" /></span></p>
         <highcharts :options="chartOptions" id="pnl-differentiator-chart"></highcharts>
     </div>
 </template>
